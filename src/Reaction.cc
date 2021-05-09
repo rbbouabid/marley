@@ -40,6 +40,7 @@ namespace {
     { ProcType::AntiNeutrinoCC, "anti-\u03BD CC" },
     { ProcType::NC, "NC" },
     { ProcType::NuElectronElastic, "(anti-)\u03BD + e\u207B ES" },
+    { ProcType::DM, "DM" },
   };
 
   // Defines the neutrino species that can participate in each type
@@ -60,6 +61,11 @@ namespace {
     },
 
     { ProcType::NuElectronElastic,
+        { ELECTRON_NEUTRINO, MUON_NEUTRINO, TAU_NEUTRINO,
+          ELECTRON_ANTINEUTRINO, MUON_ANTINEUTRINO, TAU_ANTINEUTRINO }
+    },
+
+    { ProcType::DM,
         { ELECTRON_NEUTRINO, MUON_NEUTRINO, TAU_NEUTRINO,
           ELECTRON_ANTINEUTRINO, MUON_ANTINEUTRINO, TAU_ANTINEUTRINO }
     },
@@ -257,6 +263,8 @@ marley::Event marley::Reaction::make_event_object(double KEa,
 
 int marley::Reaction::get_ejectile_pdg(int pdg_a, ProcType proc_type) {
   int pdg_c = 0;
+  std::cout<<"i got here reaction.cc"<<std::endl;
+  std::cout<<proc_type<<std::endl;
 
   // First, check that the projectile PDG code is valid for the
   // given process type
@@ -266,6 +274,7 @@ int marley::Reaction::get_ejectile_pdg(int pdg_a, ProcType proc_type) {
     else if ( proc_type == ProcType::AntiNeutrinoCC ) pdg_c = pdg_a + 1;
     else if ( proc_type == ProcType::NC ) pdg_c = pdg_a;
     else if ( proc_type == ProcType::NuElectronElastic ) pdg_c = pdg_a;
+    else if ( proc_type == ProcType::DM ) pdg_c = pdg_a - 1;
     else throw marley::Error("Unrecognized ProcessType encountered in"
       " marley::Reaction::get_ejectile_pdg()");
   }
@@ -277,17 +286,20 @@ int marley::Reaction::get_ejectile_pdg(int pdg_a, ProcType proc_type) {
 }
 
 std::string marley::Reaction::proc_type_to_string(const ProcType& pt) {
+  std::cout<<"i got here reaction.cc joop"<<pt<<std::endl;
   return proc_type_to_string_map.at( pt );
 }
 
 const std::vector<int>& marley::Reaction::get_projectiles(ProcType pt) {
   return proc_type_to_nu_pdg.at( pt );
+  std::cout<<"i got here reaction.cc joop"<<pt<<std::endl;
 }
 
 std::vector< std::unique_ptr<marley::Reaction> >
   marley::Reaction::load_from_file(const std::string& filename,
   marley::StructureDatabase& db)
 {
+  std::cout<<"i get here top -- reaction.cc"<<std::endl;
   // Create an empty vector to start
   std::vector< std::unique_ptr<marley::Reaction> > loaded_reactions;
 
@@ -431,9 +443,22 @@ std::vector< std::unique_ptr<marley::Reaction> >
     // Recoil ion has charge -1
     q_d = -1;
   }
+  // DM induced beta- decay scattering raises Z by one
+  else if ( proc_type == ProcessType::DM ) {
+    std::cout<<"i got here jooop joom"<<std::endl;
+    // Check that the neutron number of the target is positive
+    int Ni = A - Zi;
+    if ( Ni <= 0 ) throw marley::Error("A DM process requires"
+      " a target nucleus with N > 0");
+    int Zf = Zi + 1;
+    pdg_d = marley_utils::get_nucleus_pid(Zf, A);
+    // Recoil ion has charge +1
+    q_d = 1;
+  }
   else throw marley::Error("Unrecognized ProcessType encountered in"
     " marley::NuclearReaction::load_from_file()");
 
+  std::cout<<"this whole function is ok"<<std::endl;
   // Now that we know the PDG code for the final nucleus, look up discrete
   // level data for it. Set the level pointers for matrix elements representing
   // transitions to discrete nuclear levels
@@ -447,6 +472,8 @@ std::vector< std::unique_ptr<marley::Reaction> >
 
     loaded_reactions.emplace_back( std::make_unique<marley::NuclearReaction>(
       proc_type, pdg_a, pdg_b, pdg_c, pdg_d, q_d, matrix_elements) );
+
+  std::cout<<"this loop is ok"<<std::endl;
   }
 
   return loaded_reactions;

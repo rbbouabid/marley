@@ -395,6 +395,17 @@ double marley::NuclearReaction::diff_xs(const marley::MatrixElement& mat_el,
   return xsec;
 }
 
+//double marley::NuclearReaction::dm_diff_xs(const marley::MatrixElement& mat_el,
+//  double KEa, double cos_theta_c_cm) const
+//{
+//  // Check that the scattering cosine is within the physically meaningful range
+//  if ( std::abs(cos_theta_c_cm) > 1. ) return 0.;
+//  double beta_c_cm;
+//  double xsec = total_xs(mat_el, KEa, beta_c_cm, true);
+//  xsec *= mat_el.cos_theta_pdf(cos_theta_c_cm, beta_c_cm);
+//  return xsec;
+//}
+
 // Helper function for total_xs and diff_xs()
 double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa,
   double cos_theta_c_cm, std::vector<double>* level_xsecs, bool differential)
@@ -500,6 +511,7 @@ double marley::NuclearReaction::total_xs(const marley::MatrixElement& me,
   double Eb_cm = (s + mb_*mb_ - ma_*ma_) / (2. * sqrt_s);
   double Ec_cm = (s + mc_*mc_ - md2) / (2. * sqrt_s);
   double pc_cm = marley_utils::real_sqrt(std::pow(Ec_cm, 2) - mc_*mc_);
+  double pb_cm = marley_utils::real_sqrt(std::pow(Eb_cm, 2) - mb_*mc_);
 
   // Compute the (dimensionless) speed of the ejectile in the CM frame
   beta_c_cm = pc_cm / Ec_cm;
@@ -515,33 +527,46 @@ double marley::NuclearReaction::total_xs(const marley::MatrixElement& me,
   double beta_rel_cd = marley_utils::real_sqrt(
     std::pow(pc_dot_pd, 2) - mc_*mc_*md2) / pc_dot_pd;
 
-  // Common factors for the allowed approximation total cross sections
-  // for both CC and NC reactions
-  double total_xsec = (marley_utils::GF2 / marley_utils::pi)
-    * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm * me.strength();
+  if ( process_type_ == ProcessType::DM )
+  {
+    // factors for the dm total cross sections
+    double total_xsec = (1. / (64.*(marley_utils::pi*marley_utils::pi)))
+      * ( 1. / s ) * (pc_cm / pb_cm) * me.strength();
 
-  // Apply extra factors based on the current process type
-  if ( process_type_ == ProcessType::NeutrinoCC
-    || process_type_ == ProcessType::AntiNeutrinoCC )
-  {
-    // Calculate a Coulomb correction factor using either a Fermi function
-    // or the effective momentum approximation
-    double factor_C = coulomb_correction_factor( beta_rel_cd );
-    total_xsec *= marley_utils::Vud2 * factor_C;
+    return total_xsec;
   }
-  else if ( process_type_ == ProcessType::NC )
+
+  if ( process_type_ != ProcessType::DM )
   {
-    // For NC, extra factors are only needed for Fermi transitions (which
-    // correspond to CEvNS since they can only access the nuclear ground state)
-    if ( me.type() == ME_Type::FERMI ) {
-      double Q_w = weak_nuclear_charge();
-      total_xsec *= 0.25*std::pow(Q_w, 2);
+    // Common factors for the allowed approximation total cross sections
+    // for both CC and NC reactions
+    double total_xsec = (marley_utils::GF2 / marley_utils::pi)
+      * ( Eb_cm * Ed_cm / s ) * Ec_cm * pc_cm * me.strength();
+  
+
+
+    // Apply extra factors based on the current process type
+    if ( process_type_ == ProcessType::NeutrinoCC
+      || process_type_ == ProcessType::AntiNeutrinoCC )
+    {
+      // Calculate a Coulomb correction factor using either a Fermi function
+      // or the effective momentum approximation
+      double factor_C = coulomb_correction_factor( beta_rel_cd );
+      total_xsec *= marley_utils::Vud2 * factor_C;
     }
+    else if ( process_type_ == ProcessType::NC )
+    {
+      // For NC, extra factors are only needed for Fermi transitions (which
+      // correspond to CEvNS since they can only access the nuclear ground state)
+      if ( me.type() == ME_Type::FERMI ) {
+        double Q_w = weak_nuclear_charge();
+        total_xsec *= 0.25*std::pow(Q_w, 2);
+      }
+    }
+    else throw marley::Error("Unrecognized process type encountered in"
+      " marley::NuclearReaction::total_xs()");
+    return total_xsec;
   }
-  else throw marley::Error("Unrecognized process type encountered in"
-    " marley::NuclearReaction::total_xs()");
-
-  return total_xsec;
 }
 
 // Sample an ejectile scattering cosine in the CM frame.

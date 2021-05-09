@@ -593,6 +593,7 @@ double marley::Generator::total_xs( int pdg_a, double KEa, int pdg_atom,
 marley::Event marley::Generator::create_event( int pdg_a, double KEa,
   int pdg_atom, const std::array<double, 3>& dir_vec )
 {
+  std::cout<<"i get here -- generator.cc"<<std::endl;
   // (1) Sample a reaction mode from all configured reactions that can handle
   // the given initial-state parameters
   std::vector<size_t> indices;
