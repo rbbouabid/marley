@@ -456,6 +456,7 @@ namespace marley_utils {
     { 14, "\u03BD\u03BC" },
     { 15, "\u03C4" },
     { 16, "\u03BD\u03C4" },
+    { 17, "X" }, // TEMPORARY DM PARTICLE FOR TESTING
     { 22, "\u03B3" },
     { 2112, "n" },
     { 2212, "p" },
@@ -474,6 +475,7 @@ namespace marley_utils {
     { 14,   0 },
     { 15,  -1 },
     { 16,   0 },
+    { 17,   0 }, // TEMPORARY DM PARTICLE FOR TESTING
     { 22,   0 },
     { 2112, 0 },
     { 2212, 1 }
