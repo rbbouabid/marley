@@ -46,6 +46,7 @@ namespace marley_utils {
   constexpr int TAU = 15;
   constexpr int TAU_NEUTRINO = 16;
   constexpr int TAU_ANTINEUTRINO = -16;
+  constexpr int DM = 17;
   constexpr int NEUTRON = 2112;
   constexpr int PROTON = 2212;
   constexpr int DEUTERON = 1000010020;

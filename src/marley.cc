@@ -249,8 +249,6 @@ int main(int argc, char* argv[]) {
 
   std::streambuf* cout_default_buf = std::cout.rdbuf();
   std::streambuf* cerr_default_buf = std::cerr.rdbuf();
-  //debug
-  std::cout<<"i get here - marley.cc"<<std::endl;
 
   // Disable automatic logging of marley::Error objects.
   // We will handle this manually below in the catch block.

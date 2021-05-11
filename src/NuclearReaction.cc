@@ -110,6 +110,23 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
   KEa_threshold_ = (std::pow(mc_ + md_gs_, 2)
     - std::pow(ma_ + mb_, 2))/(2.*mb_);
 
+  std::cout<<"Event dump for cross checking."<<std::endl;
+  std::cout<<"Particle a: "<<std::endl;
+  std::cout<<"\tpdg a: "<<pdg_a<<std::endl;
+  std::cout<<"\tmass a: "<<ma_<<std::endl;
+  std::cout<<std::endl;
+  std::cout<<"Particle b: "<<std::endl;
+  std::cout<<"\tpdg b: "<<pdg_b<<std::endl;
+  std::cout<<"\tmass b: "<<mb_<<std::endl;
+  std::cout<<std::endl;
+  std::cout<<"Particle c: "<<std::endl;
+  std::cout<<"\tpdg c: "<<pdg_c<<std::endl;
+  std::cout<<"\tmass c: "<<mc_<<std::endl;
+  std::cout<<std::endl;
+  std::cout<<"Particle d: "<<std::endl;
+  std::cout<<"\tpdg d: "<<pdg_d<<std::endl;
+  std::cout<<"\tmass d: "<<md_gs_<<std::endl;
+
   this->set_description();
 }
 

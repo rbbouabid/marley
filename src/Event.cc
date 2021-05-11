@@ -224,8 +224,6 @@ void marley::Event::delete_particles() {
 }
 
 void marley::Event::print(std::ostream& out) const {
-  // debug
-  std::cout<<"i get here - event.cc"<<std::endl;
   // Use an temporary ostringstream object so that we can ensure all
   // floating-point values are output with full precision without disturbing
   // the user's settings in the "out" stream.
@@ -243,7 +241,6 @@ void marley::Event::print(std::ostream& out) const {
 }
 
 void marley::Event::read(std::istream& in) {
-  std::cout<<"i get here2 - event.cc"<<std::endl;
   this->clear();
 
   int num_initial;

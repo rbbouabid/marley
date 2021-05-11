@@ -15,7 +15,7 @@
   // Neutrino source specification
     source: {
       type: "monoenergetic",
-      neutrino: "ve",
+      neutrino: "dm",
       energy: 10,        // Neutrino energy (MeV)
     },
 
