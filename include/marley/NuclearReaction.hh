@@ -131,6 +131,9 @@ namespace marley {
       virtual double total_xs(const marley::MatrixElement& me, double KEa,
         double& beta_c_cm, bool check_max_E_level = true) const;
 
+      virtual double dm_total_xs(double energy_level, const marley::MatrixElement& me, double KEa,
+        double& beta_c_cm, bool check_max_E_level = true) const;
+
       /// Computes an approximate correction factor to account for
       /// effects of the Coulomb potential when calculating cross sections
       /// @param beta_rel_cd The relative speed of the final particles c and d

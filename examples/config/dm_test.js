@@ -3,20 +3,21 @@
 {
   seed: 123456, // Random number seed (omit to use time since Unix epoch)
 
-  // Pure 40Ar target
+  // Pure 76Ge target
   target: {
-    nuclides: [ 1000180400 ],
+    nuclides: [ 1000320760 ], //76Ge
+    //nuclides: [ 1000541310 ],
     atom_fractions: [ 1.0 ],
   },
 
-  // Simulate CC ve scattering on 40Ar
+  // Simulate CC dm scattering on 76Ge
   reactions: [ "dm.react" ],
 
   // Neutrino source specification
     source: {
       type: "monoenergetic",
       neutrino: "dm",
-      energy: 10,        // Neutrino energy (MeV)
+      energy: 10000.0,        // Neutrino energy (MeV)
     },
 
   // Incident neutrino direction 3-vector

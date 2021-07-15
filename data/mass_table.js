@@ -29,7 +29,7 @@
     { pdg: 14, mass: 0.0 }, // nu_mu
     { pdg: 15, mass: 1907490.0 }, // tau-
     { pdg: 16, mass: 0.0 }, // nu_tau
-    { pdg: 17, mass: 999.9999 }, // Temporary DM particle for testing
+    { pdg: 17, mass: 1073.544103 }, // Temporary DM particle for testing
     { pdg: 22, mass: 0.0 }, // photon
     { pdg: 2112, mass: 1008664.91585 }, // neutron
     { pdg: 2212, mass: 1007276.466812 }, // proton
@@ -779,7 +779,7 @@
     { pdg: 1000290760, mass: 75945275.026 },
     { pdg: 1000300760, mass: 75933114.957 },
     { pdg: 1000310760, mass: 75928827.626 },
-    { pdg: 1000320760, mass: 75921402.726 },
+    { pdg: 1000320760, mass: 75921402.557 },
     { pdg: 1000330760, mass: 75922392.015 },
     { pdg: 1000340760, mass: 75919213.704 },
     { pdg: 1000350760, mass: 75924541.576 },

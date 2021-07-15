@@ -95,6 +95,10 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
   if ( pdg_b_ > 1000000000 ) mb_ = mt.get_atomic_mass( pdg_b_ );
   else mb_ = mt.get_particle_mass( pdg_b_ );
 
+  std::cout<<"debugging mass: "<<std::endl;
+  std::cout<<"pdg_b_: "<<pdg_b_<<std::endl;
+  std::cout<<"mt.get_atomic_mass: "<<mb_<<std::endl;
+
   if ( pdg_d_ > 1000000000 ) {
     // If particle d is an atom and is ionized as a result of this reaction
     // (e.g., q_d_ != 0), then approximate its ground-state ionized mass by
@@ -102,13 +106,26 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
     // (i.e., neutral) ground state mass.
     md_gs_ = mt.get_atomic_mass(pdg_d_)
       - (q_d_ * mt.get_particle_mass(marley_utils::ELECTRON));
+    std::cout<<"debugging mass: "<<std::endl;
+    std::cout<<"pdg_d_: "<<pdg_d_<<std::endl;
+    std::cout<<"mt.get_atomic_mass: "<<mt.get_atomic_mass(pdg_d_)<<std::endl;
   }
   else {
     md_gs_ = mt.get_particle_mass(pdg_d_);
   }
 
-  KEa_threshold_ = (std::pow(mc_ + md_gs_, 2)
-    - std::pow(ma_ + mb_, 2))/(2.*mb_);
+  if(process_type_ == 4) {
+    std::cout<<"I got here! It's a dark matter event"<<std::endl;
+    std::cout<<"threshold mass is given by: md_gs_ + mc_ - mb_"<<std::endl;
+    std::cout<<"md_gs_: "<<md_gs_<<std::endl;
+    std::cout<<"mc_: "<<mc_<<std::endl;
+    std::cout<<"mb_: "<<mb_<<std::endl;
+    KEa_threshold_ = md_gs_ + mc_ - mb_;
+  }
+  else {
+    KEa_threshold_ = (std::pow(mc_ + md_gs_, 2)
+      - std::pow(ma_ + mb_, 2))/(2.*mb_);
+  }
 
   std::cout<<"Event dump for cross checking."<<std::endl;
   std::cout<<"Particle a: "<<std::endl;
@@ -126,6 +143,8 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
   std::cout<<"Particle d: "<<std::endl;
   std::cout<<"\tpdg d: "<<pdg_d<<std::endl;
   std::cout<<"\tmass d: "<<md_gs_<<std::endl;
+
+  std::cout<<"threshold mass required: "<<KEa_threshold_<<std::endl;
 
   this->set_description();
 }
@@ -412,16 +431,6 @@ double marley::NuclearReaction::diff_xs(const marley::MatrixElement& mat_el,
   return xsec;
 }
 
-//double marley::NuclearReaction::dm_diff_xs(const marley::MatrixElement& mat_el,
-//  double KEa, double cos_theta_c_cm) const
-//{
-//  // Check that the scattering cosine is within the physically meaningful range
-//  if ( std::abs(cos_theta_c_cm) > 1. ) return 0.;
-//  double beta_c_cm;
-//  double xsec = total_xs(mat_el, KEa, beta_c_cm, true);
-//  xsec *= mat_el.cos_theta_pdf(cos_theta_c_cm, beta_c_cm);
-//  return xsec;
-//}
 
 // Helper function for total_xs and diff_xs()
 double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa,
@@ -453,6 +462,8 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa,
 
     // Get the excitation energy for the current level
     double level_energy = mat_el.level_energy();
+    std::cout<<"energy level: "<<level_energy<<std::endl;
+    std::cout<<"mat strength: "<<mat_el.strength()<<std::endl;
 
     // Exit the loop early if you reach a level with an energy that's too high
     if ( level_energy > max_E_level ) break;
@@ -467,7 +478,13 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa,
       // current level is kinematically accessible in the check against
       // max_E_level above)
       double beta_c_cm = 0.;
-      double partial_xsec = total_xs(mat_el, KEa, beta_c_cm, false);
+      double partial_xsec;
+      if ( 1 ) {
+        partial_xsec = dm_total_xs(1.0,mat_el, KEa, beta_c_cm, false);
+      }
+      else {
+        partial_xsec = total_xs(mat_el, KEa, beta_c_cm, false);
+      }
 
       // If a differential cross section (d\sigma / d\cos\theta_{CM})
       // is desired, then multiply by the appropriate angular factor
@@ -544,14 +561,6 @@ double marley::NuclearReaction::total_xs(const marley::MatrixElement& me,
   double beta_rel_cd = marley_utils::real_sqrt(
     std::pow(pc_dot_pd, 2) - mc_*mc_*md2) / pc_dot_pd;
 
-  if ( process_type_ == ProcessType::DM )
-  {
-    // factors for the dm total cross sections
-    double total_xsec = (1. / (64.*(marley_utils::pi*marley_utils::pi)))
-      * ( 1. / s ) * (pc_cm / pb_cm) * me.strength();
-
-    return total_xsec;
-  }
 
   if ( process_type_ != ProcessType::DM )
   {
@@ -584,6 +593,124 @@ double marley::NuclearReaction::total_xs(const marley::MatrixElement& me,
       " marley::NuclearReaction::total_xs()");
     return total_xsec;
   }
+}
+
+// Compute the total reaction cross section (in MeV^(-2)) for a transition to a
+// particular nuclear level using the center of momentum frame (honestly could be lab frame)
+double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::MatrixElement& me,
+  double KEa, double& beta_c_cm, bool check_max_E_level) const
+{
+  std::cout<<"Computing Dark Matter differential xs for a specific nuclear transition"<<std::endl;
+
+  // Want to check these checks 
+ 
+  // Don't bother to compute anything if the matrix element vanishes for this
+  // level
+  if ( me.strength() == 0. ) return 0.;
+
+  // Also don't proceed further if the reaction is below threshold (equivalently,
+  // if the requested level excitation energy E_level exceeds that maximum
+  // kinematically-allowed value). To avoid redundant checks of the threshold,
+  // skip this check if check_max_E_level is set to false.
+  if ( check_max_E_level ) {
+    double max_E_level = max_level_energy( KEa );
+    if ( me.level_energy() > max_E_level ) return 0.;
+  }
+
+  // The final nuclear mass (before nuclear de-excitations) is the sum of the
+  // ground state residue mass plus the excitation energy of the accessed level
+  //double md2 = std::pow(md_gs_ + me.level_energy(), 2);
+  double md2 = std::pow(md_gs_ + energy_level, 2);
+  double md = md_gs_ + energy_level;
+
+  // Compute Mandelstam s (the square of the total CM frame energy)
+  double s = std::pow(ma_ + mb_, 2) + 2.*mb_*KEa;
+  double sqrt_s = std::sqrt(s);
+
+  // Compute CM frame total energies for two of the particles. Also
+  // compute the magnitude of the ejectile CM frame momentum.
+  double Eb_cm = (s + mb_*mb_ - ma_*ma_) / (2. * sqrt_s);
+  double Ec_cm = (s + mc_*mc_ - md2) / (2. * sqrt_s);
+  double pc_cm = marley_utils::real_sqrt(std::pow(Ec_cm, 2) - mc_*mc_);
+  double pb_cm = marley_utils::real_sqrt(std::pow(Eb_cm, 2) - mb_*mc_);
+
+  // Compute the (dimensionless) speed of the ejectile in the CM frame
+  beta_c_cm = pc_cm / Ec_cm;
+
+  // CM frame total energy of the nuclear residue
+  double Ed_cm = sqrt_s - Ec_cm;
+
+  // Dot product of the four-momenta of particles c and d
+  double pc_dot_pd = Ed_cm*Ec_cm + std::pow(pc_cm, 2);
+
+  // Relative speed of particles c and d, computed with a manifestly
+  // Lorentz-invariant expression
+  double beta_rel_cd = marley_utils::real_sqrt(
+    std::pow(pc_dot_pd, 2) - mc_*mc_*md2) / pc_dot_pd;
+
+  // Coulomb interactions F
+  // Need to check this by hand!
+  //double S = marley::sqrt(1 - alpha*alpha*Z*Z);
+  //double eta = alpha*Z*Ec_cm/(pc_cm);
+  //double F = 2*(1 + marley_utils::real_sqrt(1 - S)) modsquared( Gamma( S + i*eta) ) / (Gamma(1+S))^2 (2 r_N |p_e|)^{2S - 2} e^{pi N}
+
+  // Theoretical Matrix Elements from the paper
+  double mx = ma_;
+  double m_thresh = md + 0.511 - mb_;
+  double pe = marley_utils::real_sqrt((m_thresh - mx)*(m_thresh - mx - 2*(0.511))); 
+  double mn = 939.57;
+  double mp = 939.27;
+  double LAMBDA = 1.; // minor big problem here
+  double Ee = Ec_cm;
+  double lambda = 1.2694;
+  double Msquared = 4*mn*mx/(LAMBDA*LAMBDA*LAMBDA*LAMBDA)* ( Ee *(2*mn-mp+2*mx-Ee) - mc_*mc_ 
+      	    				+ 2*lambda*(Ee*Ee - mc_*mc_)
+      					+ 2*lambda*lambda*(Ee*(2*mn + mp + 2*mx - Ee) - mc_*mc_) );
+
+
+  // factors for the dm total cross sections
+  //double prefactor = (1. / (64.*(marley_utils::pi*marley_utils::pi)))
+  //  * ( 1. / s ) * (pc_cm / pb_cm) ;
+  //double total_xsec = prefactor * Msquared;
+  //double total_xsec = prefactor * me.strength();
+  double total_xsec = (pe) / (16*marley_utils::pi*mx*md_gs_*md_gs_) *Msquared;
+
+  std::cout<<"Lets debug this function."<<std::endl;
+  std::cout<<"    threshold mass: "<<m_thresh<<std::endl;
+  std::cout<<"    electron momentum: "<<pe<<std::endl;
+  std::cout<<"    matrix element squared: "<<Msquared<<std::endl;
+  std::cout<<"    total_xsec: "<<total_xsec<<std::endl;
+  std::cout<<std::endl;
+
+
+
+
+  // Porting Mathematica notebook work
+  // Let's learn from our mistakes and test as we go
+  // Going to just port it straight up 
+  // It takes in an energy level and spits out a matrix element
+  // Can use this to spit out a differential cross section
+  // Total cross section will just call this function and multiply by 4pi or something
+  // Once you get this done it's pretty close to being done I think..
+  // Comes down to inputting the correct matrix elements
+  std::cout<<"\nNew test time!"<<std::endl;
+  double vx = 0.001;
+  //double mx = ma_;
+  double Z = Zi_;
+  double me_ = 0.511;
+  double mN = mb_ - Zi_*me_;
+
+  double ExLab = mx + (1/2)*mx*vx*vx;
+  double Ecm = std::sqrt(mx*mx + mN*mN + 2*mN*ExLab);
+  double Ex = (Ecm/2)*(1+( (mx*mx) / (Ecm*Ecm) ) - ( (mN*mN) / (Ecm*Ecm) ) );
+  double E2 = (Ecm/2)*(1+( (mN*mN) / (Ecm*Ecm) ) - ( (mx*mx) / (Ecm*Ecm) ) );
+  
+  std::cout<<"\n"<<std::endl;
+  std::cout<<"ExLab: "<<ExLab<<std::endl;
+  std::cout<<"Ecm: "<<Ecm<<std::endl;
+  std::cout<<"Ex: "<<Ex<<std::endl;
+  std::cout<<"E2: "<<E2<<std::endl;
+  return total_xsec;
 }
 
 // Sample an ejectile scattering cosine in the CM frame.
