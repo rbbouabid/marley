@@ -19,6 +19,7 @@
 #include <fstream>
 #include <iostream>
 #include <sstream>
+#include <iomanip>
 
 #include "marley/marley_utils.hh"
 #include "marley/Error.hh"
@@ -648,11 +649,6 @@ double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::M
   double beta_rel_cd = marley_utils::real_sqrt(
     std::pow(pc_dot_pd, 2) - mc_*mc_*md2) / pc_dot_pd;
 
-  // Coulomb interactions F
-  // Need to check this by hand!
-  //double S = marley::sqrt(1 - alpha*alpha*Z*Z);
-  //double eta = alpha*Z*Ec_cm/(pc_cm);
-  //double F = 2*(1 + marley_utils::real_sqrt(1 - S)) modsquared( Gamma( S + i*eta) ) / (Gamma(1+S))^2 (2 r_N |p_e|)^{2S - 2} e^{pi N}
 
   // Theoretical Matrix Elements from the paper
   double mx = ma_;
@@ -675,14 +671,6 @@ double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::M
   //double total_xsec = prefactor * me.strength();
   double total_xsec = (pe) / (16*marley_utils::pi*mx*md_gs_*md_gs_) *Msquared;
 
-  std::cout<<"Lets debug this function."<<std::endl;
-  std::cout<<"    threshold mass: "<<m_thresh<<std::endl;
-  std::cout<<"    electron momentum: "<<pe<<std::endl;
-  std::cout<<"    matrix element squared: "<<Msquared<<std::endl;
-  std::cout<<"    total_xsec: "<<total_xsec<<std::endl;
-  std::cout<<std::endl;
-
-
 
 
   // Porting Mathematica notebook work
@@ -695,22 +683,100 @@ double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::M
   // Comes down to inputting the correct matrix elements
   std::cout<<"\nNew test time!"<<std::endl;
   double vx = 0.001;
+  double pi = 3.14159265358979323846;
   //double mx = ma_;
   double Z = Zi_;
+  double A = Ai_;
   double me_ = 0.511;
+  double mx_ = 10.;
+  double cos_theta = 1.;
   double mN = mb_ - Zi_*me_;
+  double mNprime = md_gs_ - Zi_*me_;
+  double val = 1.;
+  double lambd = -1.2694;
+  //double LAMBDA = 1.;
 
-  double ExLab = mx + (1/2)*mx*vx*vx;
-  double Ecm = std::sqrt(mx*mx + mN*mN + 2*mN*ExLab);
-  double Ex = (Ecm/2)*(1+( (mx*mx) / (Ecm*Ecm) ) - ( (mN*mN) / (Ecm*Ecm) ) );
-  double E2 = (Ecm/2)*(1+( (mN*mN) / (Ecm*Ecm) ) - ( (mx*mx) / (Ecm*Ecm) ) );
+  double ExLab = mx_ + (1./2)*mx_*vx*vx;
+  double Ecm = std::sqrt(mx_*mx_ + mN*mN + 2*mN*ExLab);
+  double Ex = (Ecm/2)*(1+( (mx_*mx_) / (Ecm*Ecm) ) - ( (mN*mN) / (Ecm*Ecm) ) );
+  double E2 = (Ecm/2)*(1+( (mN*mN) / (Ecm*Ecm) ) - ( (mx_*mx_) / (Ecm*Ecm) ) );
+  double E3 = (Ecm/2)*(1+( (mNprime*mNprime) / (Ecm*Ecm) ) - ( (me_*me_) / (Ecm*Ecm) ) );
+  double Ee_ = (Ecm/2)*(1+ ( (me_*me_) / (Ecm*Ecm) ) - ( (mNprime*mNprime) / (Ecm*Ecm) ) );
   
-  std::cout<<"\n"<<std::endl;
-  std::cout<<"ExLab: "<<ExLab<<std::endl;
-  std::cout<<"Ecm: "<<Ecm<<std::endl;
-  std::cout<<"Ex: "<<Ex<<std::endl;
-  std::cout<<"E2: "<<E2<<std::endl;
-  return total_xsec;
+  double kx = std::sqrt(Ex*Ex - mx_*mx_);
+  double k2 = std::sqrt(E2*E2 - mN*mN);
+  double k3 = std::sqrt(E3*E3 - mNprime*mNprime);
+  double ke = std::sqrt(Ee_*Ee_ - me_*me_);
+
+  double kekx = Ee_*Ex - kx*ke*cos_theta;
+  double p2p3 = E2*E3 - k2*k3*cos_theta;
+  double p2ke = E2*Ee_ - k2*ke*cos_theta;
+  double p3kx = E3*Ex + kx*ke*cos_theta;
+  double p3ke = E3*Ee_ + ke*ke;
+  double p2kx = E2*Ex - k2*kx*cos_theta;
+
+  double gamma2CM = (Ex + mN)/(Ecm);
+  double beta2CM = (kx)/(Ecm + mN);
+  double E3lab = gamma2CM*(E3 + beta2CM*cos_theta*std::sqrt(E3*E3 - mNprime*mNprime));
+  double Eelab = gamma2CM*(Ee_ + beta2CM*cos_theta*std::sqrt(Ee_*Ee_ - me_*me_));
+
+  double AmpUV = p3ke*p2kx*(4.*(val + lambd*lambd)+8.*lambd*val)+p3kx*p2ke*(4.*(val+lambd*lambd)-8.*lambd*val)-val*4.*mN*mNprime*kekx;
+  double dsigmadCosBareUV = vx*(1./LAMBDA*LAMBDA*LAMBDA*LAMBDA)*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))*AmpUV;
+
+  // I suppose I don't need any of this stuff because MARLEY already does coulomb correction..
+  //double alpha = 1./137.;
+  //double S = std::sqrt(1-alpha*alpha*Z*Z);
+  //double eta = (alpha*Z*Ee_)/std::sqrt(Ee_*Ee_ - me_*me_);
+  //double rN = (1.2 * std::pow(10,-15))*(1./(1.9733*std::pow(10,-13)))*std::pow(A,1./3.);
+  //double F = 2.*(1+S)*(1./std::pow(tgamma(1+2*S),2));
+  //std::complex<double> arg( S,(alpha*Z*Eelab)/(std::sqrt(Eelab*Eelab - me_*me_)) );
+	
+
+  //std::cout<<"\n"<<std::endl;
+  //std::cout<<std::setprecision(20)<<std::endl;
+  //std::cout<<"mN: "<<mN<<std::endl;
+  //std::cout<<"mNprime: "<<mNprime<<std::endl;
+  //std::cout<<"ExLab: "<<ExLab<<std::endl;
+  //std::cout<<"Ecm: "<<Ecm<<std::endl;
+  //std::cout<<"Ex: "<<Ex<<std::endl;
+  //std::cout<<"E2: "<<E2<<std::endl;
+  //std::cout<<"E3: "<<E3<<std::endl;
+  //std::cout<<"Ee_: "<<Ee_<<std::endl;
+  //std::cout<<std::endl;
+
+  //std::cout<<"kx: "<<kx<<std::endl;
+  //std::cout<<"k2: "<<k2<<std::endl;
+  //std::cout<<"k3: "<<k3<<std::endl;
+  //std::cout<<"ke: "<<ke<<std::endl;
+  //std::cout<<std::endl;
+
+  //std::cout<<"kekx: "<<kekx<<std::endl;
+  //std::cout<<"p2p3: "<<p2p3<<std::endl;
+  //std::cout<<"p2ke: "<<p2ke<<std::endl;
+  //std::cout<<"p3kx: "<<p3kx<<std::endl;
+  //std::cout<<"p3ke: "<<p3ke<<std::endl;
+  //std::cout<<"p2kx: "<<p2kx<<std::endl;
+  //std::cout<<std::endl;
+
+  //std::cout<<"gamma2CM: "<<gamma2CM<<std::endl;
+  //std::cout<<"beta2CM: "<<beta2CM<<std::endl;
+  //std::cout<<"E3lab: "<<E3lab<<std::endl; 
+  //std::cout<<"Eelab: "<<Eelab<<std::endl; 
+  //std::cout<<std::endl;
+
+  //std::cout<<"AmpUV: "<<AmpUV<<std::endl;
+  //std::cout<<"dsigmadCosBareUV: "<<dsigmadCosBareUV<<std::endl;
+  //std::cout<<std::endl;
+
+  //std::cout<<"S: "<<S<<std::endl;
+  //std::cout<<"eta: "<<eta<<std::endl;
+  //std::cout<<"rN: "<<rN<<std::endl;
+  //std::cout<<"arg: "<<arg<<std::endl;
+  //std::cout<<"tgamma(arg): "<<tgamma(arg)<<std::endl;
+
+
+  //return total_xsec;
+  return 4*marley_utils::pi*dsigmadCosBareUV;
 }
 
 // Sample an ejectile scattering cosine in the CM frame.
