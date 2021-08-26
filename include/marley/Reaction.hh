@@ -76,7 +76,9 @@ namespace marley {
       /// @param gen Reference to the Generator to use for random sampling
       /// @note Functions that override create_event() should throw an
       /// Error if pdg_a != pdg_a_.
-      virtual marley::Event create_event(int pdg_a, double KEa,
+      virtual marley::Event create_event(int pdg_a, double KEa, 
+        marley::Generator& gen) const = 0;
+      virtual marley::Event create_event(int pdg_a, double KEa, double dm_mass, double dm_velocity, double dm_cutoff,
         marley::Generator& gen) const = 0;
 
       /// @brief Get a string that contains the formula for this reaction

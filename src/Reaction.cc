@@ -294,7 +294,6 @@ std::vector< std::unique_ptr<marley::Reaction> >
   marley::Reaction::load_from_file(const std::string& filename,
   marley::StructureDatabase& db)
 {
-  std::cout<<"i get here top -- reaction.cc"<<std::endl;
   // Create an empty vector to start
   std::vector< std::unique_ptr<marley::Reaction> > loaded_reactions;
 

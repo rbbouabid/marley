@@ -40,6 +40,7 @@ namespace marley {
 
       void prepare_direction( marley::Generator& gen ) const;
       void prepare_neutrino_source( marley::Generator& gen ) const;
+      void prepare_dm_source( marley::Generator& gen ) const;
       void prepare_reactions( marley::Generator& gen ) const;
       void prepare_structure( marley::Generator& gen ) const;
       void prepare_target( marley::Generator& gen ) const;

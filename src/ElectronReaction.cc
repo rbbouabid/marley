@@ -214,3 +214,9 @@ marley::Event marley::ElectronReaction::create_event(int pdg_a, double KEa,
   return make_event_object( KEa, pc_cm, cos_theta_c_cm, phi_c_cm, Ec_cm, Ed_cm,
     0., 1, marley::Parity(true) );
 }
+
+marley::Event marley::ElectronReaction::create_event(int pdg_a, double KEa, double dm_mass, double dm_velocity, double dm_cutoff,
+  marley::Generator& gen) const
+{
+  return 0.;
+}

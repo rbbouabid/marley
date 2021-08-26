@@ -69,11 +69,17 @@ marley::Event marley::Generator::create_event() {
   // (1) Select a reacting neutrino energy and reaction using the
   // flux-weighted total cross section(s)
   double E_nu;
+  std::cout<<"print this before everything fucked"<<std::endl;
   marley::Reaction& r = sample_reaction( E_nu );
 
   // (2) Create the prompt two-two scattering event using the
   // sampled reaction object
-  marley::Event ev = r.create_event( source_->get_pid(), E_nu, *this );
+  std::cout<<" is this before all the loops?"<<std::endl;
+  std::cout<<" do I get to know the process at this stage in generator.cc?"<<std::endl;
+  marley::Event ev = r.create_event( source_->get_pid(), E_nu, source_->get_Emax(), 1., source_->get_Emin(),*this );
+  std::cout<<" this is after create_event() inside of Generator.cc"<<std::endl;
+  std::cout<<"source_.dm_mass: "<<source_->get_Emax()<<std::endl;
+  std::cout<<"source_.dm_UV: "<<source_->get_Emin()<<std::endl;
 
   // (3) If needed, de-excite the final-state residue
   if ( do_deexcitations_ ) {
@@ -134,7 +140,7 @@ void marley::Generator::normalize_E_pdf() {
     norm_ = 1.0; //
     // Now norm_ is assigned to be the product of the total cross section times
     // the source PDF at energy Emin
-    norm_ = E_pdf( source_->get_Emin() );
+    //norm_ = E_pdf( source_->get_Emin() );
     if ( norm_ <= 0. || std::isnan(norm_) ) {
       throw marley::Error("The total cross section for all defined reactions"
         " is <= 0 or NaN for the neutrino energy defined in a monoenergetic"
@@ -152,9 +158,13 @@ void marley::Generator::normalize_E_pdf() {
 
     // Update the normalization factor for use with the reacting neutrino
     // energy probability density function
-    norm_ = marley_utils::num_integrate( [this](double E)
-      -> double { return this->E_pdf(E); }, source_->get_Emin(),
-      source_->get_Emax() );
+    //norm_ = marley_utils::num_integrate( [this](double E)
+    //  -> double { return this->E_pdf(E); }, source_->get_Emin(),
+    //  source_->get_Emax() );
+
+    norm_ = 1.; // extremely silly and dumb hack TODO: change this dumb hack
+
+    std::cout<<"norm_: "<<norm_<<std::endl;
 
     if ( norm_ <= 0. || std::isnan(norm_) ) {
       throw marley::Error( "The integral of the cross-section-weighted"
@@ -272,6 +282,7 @@ double marley::Generator::E_pdf(double E) {
   // Sum all of the reaction total cross sections, saving
   // each individual value along the way. Take weighting
   // by atom fraction in the target material into account.
+  std::cout<<"reactions_.size(): "<<reactions_.size()<<std::endl;
   for ( size_t j = 0, s = reactions_.size(); j < s; ++j ) {
 
     // Get the current reaction
@@ -279,6 +290,7 @@ double marley::Generator::E_pdf(double E) {
 
     // Compute the total cross section for the current reaction for a single
     // target atom
+    std::cout<<"here2"<<std::endl;
     double tot_xs = react->total_xs( source_->get_pid(), E );
 
     // If the target_ member has not been initialized, don't bother doing any
@@ -330,9 +342,11 @@ marley::Reaction& marley::Generator::sample_reaction(double& E) {
 
   // TODO: protect against source_ changing E_min or E_max after you compute
   // the normalization factor norm_ in marley::Generator::init()
-  E = rejection_sample([this](double E_nu)
-    -> double { return this->E_pdf(E_nu); }, source_->get_Emin(),
-    source_->get_Emax(), E_pdf_max_);
+  // EVIL hack
+  E = 1.;
+  //E = rejection_sample([this](double E_nu)
+  //  -> double { return this->E_pdf(E_nu); }, source_->get_Emin(),
+  //  source_->get_Emax(), E_pdf_max_);
 
   // If the value of max changed after the call to rejection_sample() and the
   // old value wasn't UNKNOWN_MAX, then the rejection sampling routine must
@@ -599,6 +613,7 @@ marley::Event marley::Generator::create_event( int pdg_a, double KEa,
   std::vector<size_t> indices;
   std::vector<double> xsecs;
   double tot_xsec = this->total_xs( pdg_a, KEa, pdg_atom, &indices, &xsecs );
+  std::cout<<" is this after all the loop stuff?"<<std::endl;
 
   if ( xsecs.empty() || tot_xsec <= 0. ) throw marley::Error(
     "Cannot create an event for a projectile with kinetic energy = "
@@ -650,6 +665,7 @@ double marley::Generator::total_xs( int pdg_a, double KEa ) const {
 
     // Compute the total cross section for the current reaction for a single
     // target atom
+	  std::cout<<"222"<<std::endl;
     double xsec = react->total_xs( pdg_a, KEa );
 
     // If the target_ member has not been initialized, don't bother doing any

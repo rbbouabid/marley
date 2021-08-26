@@ -63,6 +63,8 @@ namespace marley {
       /// Produces a two-two scattering Event that proceeds via this reaction
       virtual marley::Event create_event(int particle_id_a,
         double KEa, marley::Generator& gen) const override;
+      virtual marley::Event create_event(int particle_id_a,
+        double KEa, double dm_mass, double dm_velocity, double dm_cutoff, marley::Generator& gen) const override;
 
       /// @brief Compute the
       /// <a href="https://en.wikipedia.org/wiki/Beta_decay#Fermi_function">
@@ -131,7 +133,7 @@ namespace marley {
       virtual double total_xs(const marley::MatrixElement& me, double KEa,
         double& beta_c_cm, bool check_max_E_level = true) const;
 
-      virtual double dm_total_xs(double energy_level, const marley::MatrixElement& me, double KEa,
+      virtual double dm_total_xs(double dm_mass, double dm_velocity, double dm_cutoff, double energy_level, const marley::MatrixElement& me, double KEa,
         double& beta_c_cm, bool check_max_E_level = true) const;
 
       /// Computes an approximate correction factor to account for
@@ -215,6 +217,10 @@ namespace marley {
       /// by this function
       /// @return The requested cross section (MeV<sup> -2</sup>)
       double summed_xs_helper(int pdg_a, double KEa, double cos_theta_c_cm,
+        std::vector<double>* level_xsecs, bool differential) const;
+      
+      // copy for dm process, I am pretty sure this is how this works
+      double summed_xs_helper(int pdg_a, double KEa, double dm_mass, double dm_velocity, double dm_cutoff,double cos_theta_c_cm,
         std::vector<double>* level_xsecs, bool differential) const;
 
       /// @brief Creates the description string based on the

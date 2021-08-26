@@ -209,7 +209,7 @@ double marley::NuclearReaction::threshold_kinetic_energy() const {
 
 // Creates an event object by sampling the appropriate quantities and
 // performing kinematic calculations
-marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
+marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, 
   marley::Generator& gen) const
 {
   // Check that the projectile supplied to this event is correct. If not, alert
@@ -245,9 +245,212 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
   // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy cos_theta_c_cm
   // value and request total cross sections by setting the last argument to false.
   double dummy = 0.;
+  std::cout<<"summed_xs_helper called here1"<<std::endl;
+  std::cout<<" any chance you can access process_type_ here?: "<<process_type_<<std::endl;
   double sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dummy,
-    &level_weights, false);
+    						&level_weights, false);
 
+  // Note that the elements in matrix_elements_ are given in order of
+  // increasing excitation energy (this is currently enforced by the reaction
+  // data format and is checked during parsing). This ensures that we can
+  // sample a matrix element index from level_weights (which is populated in
+  // the same order by summed_xs_helper()) and have it refer to the correct
+  // object.
+
+  // Complain if none of the levels we have data for are kinematically allowed
+  if ( level_weights.empty() ) {
+    throw marley::Error("Could not create this event. The DecayScheme object"
+      " associated with this reaction does not contain data for any"
+      " kinematically accessible levels for a projectile kinetic energy of "
+      + std::to_string(KEa) + " MeV (max E_level = "
+      + std::to_string( max_level_energy(KEa) ) + " MeV).");
+  }
+
+  // Complain if the total cross section (the sum of all partial level cross
+  // sections) is zero or negative (the latter is just to cover all possibilities).
+  if ( sum_of_xsecs <= 0. ) {
+    throw marley::Error("Could not create this event. All kinematically"
+      " accessible levels for a projectile kinetic energy of "
+      + std::to_string(KEa) + " MeV (max E_level = "
+      + std::to_string( max_level_energy(KEa) )
+      + " MeV) have vanishing matrix elements.");
+  }
+
+  // Create a list of parameters used to supply the weights to our discrete
+  // level sampling distribution
+  std::discrete_distribution<size_t>::param_type params( level_weights.begin(),
+    level_weights.end() );
+
+  // Sample a matrix_element using our discrete distribution and the
+  // current set of weights
+  size_t me_index = gen.sample_from_distribution( ldist, params );
+
+  const auto& sampled_matrix_el = matrix_elements_->at( me_index );
+
+  // Get the energy of the selected level.
+  double E_level = sampled_matrix_el.level_energy();
+
+  // Update the residue mass based on its excitation energy for the current
+  // event
+  md_ = md_gs_ + E_level;
+
+  // Compute Mandelstam s, the ejectile's CM frame total energy, the magnitude
+  // of the ejectile's CM frame 3-momentum, and the residue's CM frame total
+  // energy.
+  double s, Ec_cm, pc_cm, Ed_cm;
+  two_two_scatter( KEa, s, Ec_cm, pc_cm, Ed_cm );
+
+  // Determine the CM frame velocity of the ejectile
+  double beta_c_cm = pc_cm / Ec_cm;
+
+  // Sample a CM frame scattering cosine for the ejectile.
+  double cos_theta_c_cm = sample_cos_theta_c_cm( sampled_matrix_el,
+    beta_c_cm, gen );
+
+  // Sample a CM frame azimuthal scattering angle (phi) uniformly on [0, 2*pi).
+  // We can do this because the matrix elements are azimuthally invariant
+  double phi_c_cm = gen.uniform_random_double( 0.,
+    marley_utils::two_pi, false );
+
+  // Load the initial residue twoJ and parity values into twoJ and P. These
+  // variables are included in the event record and used by NucleusDecayer
+  // to start the Hauser-Feshbach decay cascade.
+  int twoJ = BOGUS_TWO_J_VALUE;
+  marley::Parity P; // defaults to positive parity
+
+  // Get access to the nuclear structure database owned by the Generator
+  auto& sdb = gen.get_structure_db();
+
+  // Retrieve the ground-state spin-parity of the initial nucleus
+  int twoJ_gs;
+  marley::Parity P_gs;
+
+  sdb.get_gs_spin_parity( pdg_b_, twoJ_gs, P_gs );
+
+  // For transitions to discrete nuclear levels, all we need to do is retrieve
+  // these values directly from the Level object
+  const marley::Level* final_lev = sampled_matrix_el.level();
+  if ( final_lev ) {
+    twoJ = final_lev->twoJ();
+    P = final_lev->parity();
+  }
+  // For transitions to the continuum, we rely on the spin-parity selection
+  // rules to determine suitable values of twoJ and P. In cases where more than
+  // one value is allowed, assume equipartition, and sample a spin-parity based
+  // on the relative nuclear level densities at the excitation energy of
+  // interest.
+  /// @todo Revisit the equipartition assumption made here in favor of
+  /// something better motivated.
+  else {
+
+    // For a Fermi transition, the final spin-parity is always the same as the
+    // initial one
+    if ( sampled_matrix_el.type() == ME_Type::FERMI ) {
+      twoJ = twoJ_gs;
+      P = P_gs;
+    }
+    else if ( sampled_matrix_el.type() == ME_Type::GAMOW_TELLER ) {
+      // For a Gamow-Teller transition, the final parity is the same as the
+      // initial parity
+      P = P_gs;
+
+      // For a spin-zero initial state, take a shortcut: the final spin will
+      // always be one.
+      if ( twoJ_gs == 0 ) twoJ = 2;
+      else {
+
+        // For an initial state with a non-zero spin, make a vector storing
+        // all of the spin values allowed by the GT selection rules.
+        // Sample an allowed value assuming equipartition of spin. Use the
+        // relative final nuclear level densities as sampling weights.
+
+        std::vector<int> allowed_twoJs;
+        std::vector<double> ld_weights;
+
+        auto& ldm = sdb.get_level_density_model( pdg_d_ );
+
+        for ( int myTwoJ = std::abs(twoJ_gs - 2); myTwoJ <= twoJ_gs + 2;
+          myTwoJ += 2 )
+        {
+          allowed_twoJs.push_back( myTwoJ );
+          ld_weights.push_back( ldm.level_density(E_level, myTwoJ, P) );
+        }
+
+        std::discrete_distribution<size_t> my_twoJ_dist( ld_weights.begin(),
+          ld_weights.end() );
+
+        size_t my_index = gen.sample_from_distribution( my_twoJ_dist );
+        twoJ = allowed_twoJs.at( my_index );
+      }
+    }
+    else throw marley::Error( "Unrecognized matrix element type encountered"
+      " in marley::NuclearReaction::create_event()" );
+  }
+
+  MARLEY_LOG_DEBUG() << "Sampled a " << sampled_matrix_el.type_str()
+    << " transition from the " << marley::TargetAtom( pdg_b_ )
+    << " ground state (with spin-parity " << static_cast<double>( twoJ_gs ) / 2.
+    << P_gs << ") to the " << marley::TargetAtom( pdg_d_ )
+    << " level with Ex = " << E_level << " MeV and spin-parity "
+    << static_cast<double>( twoJ ) / 2. << P;
+
+  // Create the preliminary event object (after 2-->2 scattering, but before
+  // de-excitation of the residual nucleus)
+  marley::Event event = make_event_object( KEa, pc_cm, cos_theta_c_cm, phi_c_cm,
+    Ec_cm, Ed_cm, E_level, twoJ, P );
+
+  // Return the preliminary event object (to be processed later by the
+  // NucleusDecayer class)
+  return event;
+}
+
+marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, double dm_mass, double dm_velocity, double dm_cutoff,
+  marley::Generator& gen) const
+{
+  // Check that the projectile supplied to this event is correct. If not, alert
+  // the user that this event does not use the requested projectile.
+  if ( pdg_a != pdg_a_ ) throw marley::Error(std::string("Could")
+    + " not create this event. The requested projectile particle ID, "
+    + std::to_string(pdg_a) + ", does not match the projectile"
+    + " particle ID, " + std::to_string(pdg_a_) + ", in the reaction dataset.");
+
+  // Sample a final residue energy level. First, check to make sure the given
+  // projectile energy is above threshold for this reaction.
+  if ( KEa < KEa_threshold_ ) throw std::range_error(std::string("Could")
+    + " not create this event. Projectile kinetic energy " + std::to_string(KEa)
+    + " MeV is below the threshold value " + std::to_string(KEa_threshold_)
+    + " MeV.");
+
+  /// @todo Add more error checks to NuclearReaction::create_event as necessary
+
+  // Create an empty vector of sampling weights (partial total cross
+  // sections to each kinematically accessible final level)
+  std::vector<double> level_weights;
+
+  // Create a discrete distribution object for level sampling.
+  // Its default constructor creates a single weight of 1.
+  // We will always explicitly give it weights to use when sampling
+  // levels, so we won't worry about its default behavior.
+  static std::discrete_distribution<size_t> ldist;
+
+  // Compute the total cross section for a transition to each individual nuclear
+  // level, and save the results in the level_weights vector (which will be
+  // cleared by summed_xs_helper() before being loaded with the cross sections).
+  // The summed_xs_helper() method can also be used for differential
+  // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy cos_theta_c_cm
+  // value and request total cross sections by setting the last argument to false.
+  double dummy = 0.;
+  double sum_of_xsecs;
+  std::cout<<"summed_xs_helper called here1"<<std::endl;
+  std::cout<<" any chance you can access process_type_ here?: "<<process_type_<<std::endl;
+  if ( process_type_ == 4 ) {
+    sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dm_mass, dm_velocity, dm_cutoff, dummy, &level_weights, false);
+  } // <---- if it's dm use the dm version of summed_xs_helper
+  else { // <--- else just do the normal one..
+
+    sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dummy,
+      &level_weights, false);
+  }
   // Note that the elements in matrix_elements_ are given in order of
   // increasing excitation energy (this is currently enforced by the reaction
   // data format and is checked during parsing). This ensures that we can
@@ -406,6 +609,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
 // in units of MeV^(-2) using the center of momentum frame.
 double marley::NuclearReaction::total_xs(int pdg_a, double KEa) const {
   double dummy_cos_theta = 0.;
+  std::cout<<"summed_xs_helper called here2"<<std::endl;
   return summed_xs_helper(pdg_a, KEa, dummy_cos_theta, nullptr, false);
 }
 
@@ -459,12 +663,15 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa,
 
   double max_E_level = max_level_energy( KEa );
   double xsec = 0.;
+  int count = 0;
   for ( const auto& mat_el : *matrix_elements_ ) {
 
     // Get the excitation energy for the current level
+    count++;
     double level_energy = mat_el.level_energy();
     std::cout<<"energy level: "<<level_energy<<std::endl;
     std::cout<<"mat strength: "<<mat_el.strength()<<std::endl;
+    std::cout<<"count: "<<count<<std::endl;
 
     // Exit the loop early if you reach a level with an energy that's too high
     if ( level_energy > max_E_level ) break;
@@ -480,12 +687,78 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa,
       // max_E_level above)
       double beta_c_cm = 0.;
       double partial_xsec;
-      if ( 1 ) {
-        partial_xsec = dm_total_xs(1.0,mat_el, KEa, beta_c_cm, false);
+      
+      partial_xsec = dm_total_xs(1.,1.,1.,1.0,mat_el, KEa, beta_c_cm, false);
+      //partial_xsec = total_xs(mat_el, KEa, beta_c_cm, false);
+      
+
+      // If a differential cross section (d\sigma / d\cos\theta_{CM})
+      // is desired, then multiply by the appropriate angular factor
+      if ( differential ) {
+        partial_xsec *= mat_el.cos_theta_pdf(cos_theta_c_cm, beta_c_cm);
       }
-      else {
-        partial_xsec = total_xs(mat_el, KEa, beta_c_cm, false);
+
+      if ( std::isnan(partial_xsec) ) {
+        MARLEY_LOG_WARNING() << "Partial cross section for reaction "
+          << description_ << " gave NaN result.";
+        MARLEY_LOG_DEBUG() << "Parameters were level energy = "
+          << mat_el.level_energy() << " MeV, projectile kinetic energy = "
+          << KEa << " MeV, and reduced matrix element = " << mat_el.strength();
+        MARLEY_LOG_DEBUG() << "The partial cross section to this level"
+          << " will be set to zero.";
+        partial_xsec = 0.;
       }
+
+      xsec += partial_xsec;
+
+      // Store the partial cross section to the current individual nuclear
+      // level if needed (i.e., if level_xsecs is not nullptr)
+      if ( level_xsecs ) level_xsecs->push_back( partial_xsec );
+    }
+  }
+
+  return xsec;
+}
+
+
+// dm copy of summed_xs_helper but with different inputs. I think this is how this works right?? 
+double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double dm_mass, double dm_velocity, double dm_cutoff,
+  double cos_theta_c_cm, std::vector<double>* level_xsecs, bool differential)
+  const
+{
+  if (pdg_a != pdg_a_) return 0.;
+  if ( differential && std::abs(cos_theta_c_cm) > 1. ) return 0.;
+  if ( dm_mass <= 0. ) return 0.;
+
+  // If we've been passed a vector to load with the partial cross sections
+  // to each nuclear level, then clear it before storing them
+  if ( level_xsecs ) level_xsecs->clear();
+
+  double max_E_level = max_level_energy( dm_mass ); // <----- TODO fix this hack
+  double xsec = 0.;
+  for ( const auto& mat_el : *matrix_elements_ ) {
+
+    // Get the excitation energy for the current level
+    double level_energy = mat_el.level_energy();
+
+    // Exit the loop early if you reach a level with an energy that's too high
+    if ( level_energy > max_E_level ) break;
+
+    // Check whether the matrix element (B(F) + B(GT)) is nonvanishing for the
+    // current level. If it is, just set the weight equal to zero rather than
+    // computing the total xs.
+    if ( mat_el.strength() != 0. ) {
+
+      // Set the check_max_E_level flag to false when calculating the total
+      // cross section for this level (we've already verified that the
+      // current level is kinematically accessible in the check against
+      // max_E_level above)
+      double beta_c_cm = 0.;
+      double partial_xsec;
+      
+      partial_xsec = dm_total_xs(dm_mass,dm_velocity,dm_cutoff,1.0,mat_el, KEa,beta_c_cm, false);
+      //partial_xsec = total_xs(mat_el, KEa, beta_c_cm, false);
+      
 
       // If a differential cross section (d\sigma / d\cos\theta_{CM})
       // is desired, then multiply by the appropriate angular factor
@@ -598,8 +871,9 @@ double marley::NuclearReaction::total_xs(const marley::MatrixElement& me,
 
 // Compute the total reaction cross section (in MeV^(-2)) for a transition to a
 // particular nuclear level using the center of momentum frame (honestly could be lab frame)
-double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::MatrixElement& me,
-  double KEa, double& beta_c_cm, bool check_max_E_level) const
+double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, double dm_cutoff,
+		double energy_level, const marley::MatrixElement& me,
+  		double KEa, double& beta_c_cm, bool check_max_E_level) const
 {
   std::cout<<"Computing Dark Matter differential xs for a specific nuclear transition"<<std::endl;
 
@@ -609,20 +883,21 @@ double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::M
   // level
   if ( me.strength() == 0. ) return 0.;
 
-  // Also don't proceed further if the reaction is below threshold (equivalently,
-  // if the requested level excitation energy E_level exceeds that maximum
-  // kinematically-allowed value). To avoid redundant checks of the threshold,
-  // skip this check if check_max_E_level is set to false.
-  if ( check_max_E_level ) {
-    double max_E_level = max_level_energy( KEa );
-    if ( me.level_energy() > max_E_level ) return 0.;
-  }
-
   // The final nuclear mass (before nuclear de-excitations) is the sum of the
   // ground state residue mass plus the excitation energy of the accessed level
   //double md2 = std::pow(md_gs_ + me.level_energy(), 2);
   double md2 = std::pow(md_gs_ + energy_level, 2);
   double md = md_gs_ + energy_level;
+
+  // Also don't proceed further if the reaction is below threshold (equivalently,
+  // if the requested level excitation energy E_level exceeds that maximum
+  // kinematically-allowed value). To avoid redundant checks of the threshold,
+  // skip this check if check_max_E_level is set to false.
+  double m_thresh = md + 0.511 - mb_;
+  if ( check_max_E_level ) {
+    if ( dm_mass < m_thresh ) return 0.;
+  }
+
 
   // Compute Mandelstam s (the square of the total CM frame energy)
   double s = std::pow(ma_ + mb_, 2) + 2.*mb_*KEa;
@@ -652,7 +927,7 @@ double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::M
 
   // Theoretical Matrix Elements from the paper
   double mx = ma_;
-  double m_thresh = md + 0.511 - mb_;
+  //double m_thresh = md + 0.511 - mb_;
   double pe = marley_utils::real_sqrt((m_thresh - mx)*(m_thresh - mx - 2*(0.511))); 
   double mn = 939.57;
   double mp = 939.27;
@@ -681,7 +956,11 @@ double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::M
   // Total cross section will just call this function and multiply by 4pi or something
   // Once you get this done it's pretty close to being done I think..
   // Comes down to inputting the correct matrix elements
-  std::cout<<"\nNew test time!"<<std::endl;
+  std::cout<<"New test time!"<<std::endl;
+  std::cout<<"  was passed some variables.."<<std::endl;
+  std::cout<<"  dm_mass: "<<dm_mass<<std::endl;
+  std::cout<<"  dm_velocity: "<<dm_velocity<<std::endl;
+  std::cout<<"  dm_cutoff: "<<dm_cutoff<<std::endl;
   double vx = 0.001;
   double pi = 3.14159265358979323846;
   //double mx = ma_;
@@ -764,8 +1043,8 @@ double marley::NuclearReaction::dm_total_xs(double energy_level, const marley::M
   //std::cout<<"Eelab: "<<Eelab<<std::endl; 
   //std::cout<<std::endl;
 
-  //std::cout<<"AmpUV: "<<AmpUV<<std::endl;
-  //std::cout<<"dsigmadCosBareUV: "<<dsigmadCosBareUV<<std::endl;
+  std::cout<<"  AmpUV: "<<AmpUV<<std::endl;
+  std::cout<<"  dsigmadCosBareUV: "<<dsigmadCosBareUV<<std::endl;
   //std::cout<<std::endl;
 
   //std::cout<<"S: "<<S<<std::endl;

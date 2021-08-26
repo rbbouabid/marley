@@ -159,7 +159,8 @@ marley::Generator marley::JSONConfig::create_generator() const
   // Use the JSON settings to update the generator's parameters
   prepare_direction( gen );
   prepare_structure( gen );
-  prepare_neutrino_source( gen );
+  //prepare_neutrino_source( gen );
+  prepare_dm_source( gen );
   prepare_reactions( gen );
   prepare_target( gen );
 
@@ -714,6 +715,70 @@ void marley::JSONConfig::prepare_neutrino_source(marley::Generator& gen) const
   // Load the generator with the new source object
   gen.set_source( std::move(source) );
 
+}
+
+void marley::JSONConfig::prepare_dm_source(marley::Generator& gen) const
+{
+  std::cout<<"Preparing the dm particle source parameters.."<<std::endl;
+  std::cout<<"  want to load the mass of the particle, the velocity, and potentially LAMBDA"<<std::endl;
+
+  // Check whether the JSON configuration includes a particle source
+  // specification
+  if ( !json_.has_key("source") ) return;
+  const marley::JSON& source_spec = json_.at("source");
+
+  // If the dm source key has a null value, just return without doing
+  // anything else
+  if ( source_spec.is_null() ) {
+    MARLEY_LOG_INFO() << "Null source specification detected. Skipping"
+      << " dm source configuration.";
+    return;
+  }
+
+  // Complain if the user didn't specify a source type
+  if ( !source_spec.has_key("type") ) {
+    throw marley::Error(std::string("Missing \"type\" key in")
+      + " dm source specification.");
+    return;
+  }
+
+  // Get the dm source type
+  bool ok;
+  std::string type = source_spec.at("type").to_string(ok);
+  if ( !ok ) handle_json_error("source.type", source_spec.at("type"));
+
+  // Complain if the user didn't specify a neutrino type
+  if (!source_spec.has_key("neutrino")) {
+    throw marley::Error(std::string("Missing \"neutrino\" key in")
+      + " neutrino source specification.");
+    return;
+  }
+  // Get the neutrino type
+  std::string nu = source_spec.at("neutrino").to_string(ok);
+  if (!ok) handle_json_error("source.neutrino", source_spec.at("neutrino"));
+
+  // Particle Data Group code for the neutrino type produced by this source
+  int pdg = neutrino_pdg(nu);
+
+  std::unique_ptr<marley::NeutrinoSource> source;
+
+  if (type == "monoDM") {
+    double energy = source_get_double("energy", source_spec,
+      "monoenergetic");
+    double dm_mass = source_get_double("mass", source_spec,
+      "monoenergetic");
+    double dm_UV = source_get_double("LAMBDA", source_spec,
+      "monoenergetic");
+    source_check_positive(energy, "energy", "monoenergetic");
+    source = std::make_unique<marley::MonoDMSource>(pdg, dm_mass, 1.,dm_UV);
+    MARLEY_LOG_INFO() << "Created monoenergetic "
+      << marley_utils::get_particle_symbol(pdg) << " source with"
+      << " dm mass = " << dm_mass << " MeV";
+  }
+
+
+  // Load the generator with the new source object
+  gen.set_source( std::move(source) );
 }
 
 void marley::JSONConfig::prepare_target( marley::Generator& gen ) const {

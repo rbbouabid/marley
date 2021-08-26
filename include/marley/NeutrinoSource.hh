@@ -113,6 +113,28 @@ namespace marley {
       double energy_; ///< neutrino energy (MeV)
   };
 
+  /// @brief Monoenergetic neutrino source
+  class MonoDMSource : public NeutrinoSource {
+    public:
+      /// @param particle_id neutrino PDG particle ID
+      /// @param E neutrino energy (MeV)
+      inline MonoDMSource(int particle_id =
+        marley_utils::DM, double M = 1., double V = 1., double LAMBDA = 1.);
+
+      inline virtual double get_Emax() const override;
+      inline virtual double get_Emin() const override;
+      inline virtual double pdf(double E) const override;
+      //inline virtual double get_Mass() const override;
+      //inline virtual double get_Velocity() const override;
+      //inline virtual double get_UV() const override;
+
+    protected:
+      double dm_mass_; ///< dm mass (MeV)
+      double dm_velocity_; ///< dm velocity (?/s)
+      double dm_UV_cutoff_; ///< theory uv cutoff param (?)
+  };
+
+
   /// @brief Supernova cooling neutrino source approximated using a Fermi-Dirac
   /// distribution
   /// @details Neutrino energies from this source are sampled from a
@@ -296,6 +318,17 @@ namespace marley {
   inline double MonoNeutrinoSource::get_Emin() const { return energy_; }
   inline double MonoNeutrinoSource::pdf(double E) const
     { if (energy_ == E) return 1.; else return 0.; }
+
+  inline MonoDMSource::MonoDMSource(int particle_id, double M, double V, double LAMBDA)
+    : NeutrinoSource(particle_id), dm_mass_(M), dm_velocity_(V), dm_UV_cutoff_(LAMBDA) {}
+  inline double MonoDMSource::get_Emax() const { return dm_mass_; }
+  inline double MonoDMSource::get_Emin() const { return dm_UV_cutoff_; }
+  //inline double MonoDMSource::get_Mass() const { return dm_mass_; }
+  //inline double MonoDMSource::get_Velocity() const { return dm_velocity_; }
+  //inline double MonoDMSource::get_UV() const { return dm_UV_cutoff_; }
+  inline double MonoDMSource::pdf(double E) const
+    { return 1.; }
+    //{ if (dm_mass_ == M) return 1.; else return 0.; }
 
   inline double FermiDiracNeutrinoSource::get_Emax() const { return Emax_; }
   inline double FermiDiracNeutrinoSource::get_Emin() const { return Emin_; }

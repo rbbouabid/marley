@@ -54,6 +54,10 @@ namespace marley {
       virtual marley::Event create_event(int particle_id_a, double KEa,
         marley::Generator& gen) const override;
 
+      virtual marley::Event create_event(int particle_id_a, double KEa, double dm_mass, double dm_velocity, double dm_cutoff,
+        marley::Generator& gen) const override;
+
+
       inline virtual double threshold_kinetic_energy() const override
         { return KEa_threshold_; }
 

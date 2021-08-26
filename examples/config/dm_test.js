@@ -12,12 +12,16 @@
 
   // Simulate CC dm scattering on 76Ge
   reactions: [ "dm.react" ],
+  log: [ { file: "stdout", level: "info" } ],
 
   // Neutrino source specification
     source: {
-      type: "monoenergetic",
+      type: "monoDM",
       neutrino: "dm",
       energy: 10000.0,        // Neutrino energy (MeV)
+      mass: 1.1, // dark matter particle mass (MeV)
+      velocity: 0.001, // dark matter particle velocity (m/s (i think) )
+      LAMBDA: 1.2, // UV cutoff parameter ( I need to think more carefully about this param ) 
     },
 
   // Incident neutrino direction 3-vector
