@@ -931,12 +931,11 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   double pe = marley_utils::real_sqrt((m_thresh - mx)*(m_thresh - mx - 2*(0.511))); 
   double mn = 939.57;
   double mp = 939.27;
-  double LAMBDA = 1.; // minor big problem here
   double Ee = Ec_cm;
   double lambda = 1.2694;
-  double Msquared = 4*mn*mx/(LAMBDA*LAMBDA*LAMBDA*LAMBDA)* ( Ee *(2*mn-mp+2*mx-Ee) - mc_*mc_ 
-      	    				+ 2*lambda*(Ee*Ee - mc_*mc_)
-      					+ 2*lambda*lambda*(Ee*(2*mn + mp + 2*mx - Ee) - mc_*mc_) );
+  //double Msquared = 4*mn*mx/(LAMBDA*LAMBDA*LAMBDA*LAMBDA)* ( Ee *(2*mn-mp+2*mx-Ee) - mc_*mc_ 
+  //    	    				+ 2*lambda*(Ee*Ee - mc_*mc_)
+  //    					+ 2*lambda*lambda*(Ee*(2*mn + mp + 2*mx - Ee) - mc_*mc_) );
 
 
   // factors for the dm total cross sections
@@ -944,7 +943,7 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   //  * ( 1. / s ) * (pc_cm / pb_cm) ;
   //double total_xsec = prefactor * Msquared;
   //double total_xsec = prefactor * me.strength();
-  double total_xsec = (pe) / (16*marley_utils::pi*mx*md_gs_*md_gs_) *Msquared;
+  //double total_xsec = (pe) / (16*marley_utils::pi*mx*md_gs_*md_gs_) *Msquared;
 
 
 
@@ -967,7 +966,8 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   double Z = Zi_;
   double A = Ai_;
   double me_ = 0.511;
-  double mx_ = 10.;
+  double mx_ = dm_mass; // <--- set this equal to the passed variable
+  double LAMBDA = dm_cutoff; // <--- set this equal to the passed variable
   double cos_theta = 1.;
   double mN = mb_ - Zi_*me_;
   double mNprime = md_gs_ - Zi_*me_;
@@ -1000,7 +1000,7 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   double Eelab = gamma2CM*(Ee_ + beta2CM*cos_theta*std::sqrt(Ee_*Ee_ - me_*me_));
 
   double AmpUV = p3ke*p2kx*(4.*(val + lambd*lambd)+8.*lambd*val)+p3kx*p2ke*(4.*(val+lambd*lambd)-8.*lambd*val)-val*4.*mN*mNprime*kekx;
-  double dsigmadCosBareUV = vx*(1./LAMBDA*LAMBDA*LAMBDA*LAMBDA)*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))*AmpUV;
+  double dsigmadCosBareUV = vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))*AmpUV;
 
   // I suppose I don't need any of this stuff because MARLEY already does coulomb correction..
   //double alpha = 1./137.;
@@ -1047,11 +1047,6 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   std::cout<<"  dsigmadCosBareUV: "<<dsigmadCosBareUV<<std::endl;
   //std::cout<<std::endl;
 
-  //std::cout<<"S: "<<S<<std::endl;
-  //std::cout<<"eta: "<<eta<<std::endl;
-  //std::cout<<"rN: "<<rN<<std::endl;
-  //std::cout<<"arg: "<<arg<<std::endl;
-  //std::cout<<"tgamma(arg): "<<tgamma(arg)<<std::endl;
 
 
   //return total_xsec;
