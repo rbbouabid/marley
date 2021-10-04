@@ -20,9 +20,9 @@
       type: "monoDM",
       neutrino: "dm",
       energy: 10000.0,        // Neutrino energy (MeV)
-      mass: 2.0, // dark matter particle mass (MeV)
+      mass: 4.0, // dark matter particle mass (MeV)
       velocity: 0.001, // dark matter particle velocity (m/s (i think) )
-      LAMBDA: 1000000.0, // UV cutoff parameter ( I need to think more carefully about this param )
+      LAMBDA: 10000000.0, // UV cutoff parameter ( I need to think more carefully about this param )
     },
 
   // Incident neutrino direction 3-vector

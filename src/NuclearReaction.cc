@@ -248,7 +248,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
   // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy cos_theta_c_cm
   // value and request total cross sections by setting the last argument to false.
   double dummy = 0.;
-  std::cout<<"summed_xs_helper called here1"<<std::endl;
+  std::cout<<"summed_xs_helper called here3"<<std::endl;
   std::cout<<" any chance you can access process_type_ here?: "<<process_type_<<std::endl;
   double sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dummy,
     						&level_weights, false);
@@ -496,6 +496,9 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
 
   // Get the energy of the selected level.
   double E_level = sampled_matrix_el.level_energy();
+  std::cout<<std::endl;
+  std::cout<<"E_level: "<<E_level<<std::endl;
+  std::cout<<std::endl;
 
   // Update the residue mass based on its excitation energy for the current
   // event
@@ -766,7 +769,7 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
       double beta_c_cm = 0.;
       double partial_xsec;
       
-      partial_xsec = dm_total_xs(dm_mass,dm_velocity,dm_cutoff,1.0,mat_el, KEa,beta_c_cm, false);
+      partial_xsec = dm_total_xs(dm_mass,dm_velocity,dm_cutoff,1.0,mat_el, KEa,beta_c_cm, true);
       //partial_xsec = total_xs(mat_el, KEa, beta_c_cm, false);
       std::cout<<"i need to turn this loop into something useful"<<std::endl;
       std::cout<<"partial_xsec: "<<partial_xsec<<std::endl;
@@ -909,6 +912,8 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   // kinematically-allowed value). To avoid redundant checks of the threshold,
   // skip this check if check_max_E_level is set to false.
   double m_thresh = md + 0.511 - mb_;
+  std::cout<<"dm_mass: "<<dm_mass<<std::endl;
+  std::cout<<"m_thresh: "<<m_thresh<<std::endl;
   if ( check_max_E_level ) {
     if ( dm_mass < m_thresh ) return 0.;
   }
@@ -976,6 +981,7 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   std::cout<<"  dm_velocity: "<<dm_velocity<<std::endl;
   std::cout<<"  dm_cutoff: "<<dm_cutoff<<std::endl;
   std::cout<<"  level_energy: "<< me.level_energy()<<std::endl;
+  std::cout<<"  m_thresh: "<<m_thresh<<std::endl;
   double vx = 0.001;
   double pi = 3.14159265358979323846;
   //double mx = ma_;
@@ -988,9 +994,13 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   double mN = mb_ - Zi_*me_;
   //double mNprime = md_gs_ - Zi_*me_;
   double mNprime = md - Zi_*me_;
-  double val = 1.;
+  //double val = 1.;
   double lambd = -1.2694;
   //double LAMBDA = 1.;
+
+  double val;
+  if(me.type() == 1) val = 0;
+  if(me.type() == 0) val = 1;
 
   double ExLab = mx_ + (1./2)*mx_*vx*vx;
   double Ecm = std::sqrt(mx_*mx_ + mN*mN + 2*mN*ExLab);
@@ -1070,8 +1080,8 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
 
 
   //return total_xsec;
-  //return 4*marley_utils::pi*dsigmadCosBareUV;
-  return 1.;
+  return 4*marley_utils::pi*dsigmadCosBareUV;
+  //return 1.;
 }
 
 // Sample an ejectile scattering cosine in the CM frame.
