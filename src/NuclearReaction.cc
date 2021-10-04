@@ -96,9 +96,10 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
   if ( pdg_b_ > 1000000000 ) mb_ = mt.get_atomic_mass( pdg_b_ );
   else mb_ = mt.get_particle_mass( pdg_b_ );
 
+  //std::cout<<std::setprecision(20)<<std::endl;
   std::cout<<"debugging mass: "<<std::endl;
   std::cout<<"pdg_b_: "<<pdg_b_<<std::endl;
-  std::cout<<"mt.get_atomic_mass: "<<mb_<<std::endl;
+  //std::cout<<"mt.get_atomic_mass: "<<mb_<<std::endl;
 
   if ( pdg_d_ > 1000000000 ) {
     // If particle d is an atom and is ionized as a result of this reaction
@@ -109,7 +110,9 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
       - (q_d_ * mt.get_particle_mass(marley_utils::ELECTRON));
     std::cout<<"debugging mass: "<<std::endl;
     std::cout<<"pdg_d_: "<<pdg_d_<<std::endl;
-    std::cout<<"mt.get_atomic_mass: "<<mt.get_atomic_mass(pdg_d_)<<std::endl;
+    //std::cout<<"mt.get_atomic_mass: "<<mt.get_atomic_mass(pdg_d_)<<std::endl;
+    //std::cout<<"z*me: "<<q_d_*mt.get_particle_mass(marley_utils::ELECTRON)<<std::endl;
+    //std::cout<<"q_d_: "<<q_d_<<std::endl;
   }
   else {
     md_gs_ = mt.get_particle_mass(pdg_d_);
@@ -416,6 +419,8 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
 
   // Sample a final residue energy level. First, check to make sure the given
   // projectile energy is above threshold for this reaction.
+  std::cout<<"KEa: "<<KEa<<std::endl;
+  std::cout<<"KEa_threshold_: "<<KEa_threshold_<<std::endl;
   if ( KEa < KEa_threshold_ ) throw std::range_error(std::string("Could")
     + " not create this event. Projectile kinetic energy " + std::to_string(KEa)
     + " MeV is below the threshold value " + std::to_string(KEa_threshold_)
@@ -451,6 +456,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
     sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dummy,
       &level_weights, false);
   }
+  std::cout<<"sum_of_xsecs: "<<sum_of_xsecs<<" |"<<std::endl;
   // Note that the elements in matrix_elements_ are given in order of
   // increasing excitation energy (this is currently enforced by the reaction
   // data format and is checked during parsing). This ensures that we can
@@ -734,7 +740,8 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
   // to each nuclear level, then clear it before storing them
   if ( level_xsecs ) level_xsecs->clear();
 
-  double max_E_level = max_level_energy( dm_mass ); // <----- TODO fix this hack
+  //double max_E_level = max_level_energy( dm_mass ); // <----- TODO fix this hack
+  double max_E_level =  dm_mass ; // <----- TODO fix this hack
   double xsec = 0.;
   for ( const auto& mat_el : *matrix_elements_ ) {
 
@@ -742,6 +749,9 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
     double level_energy = mat_el.level_energy();
 
     // Exit the loop early if you reach a level with an energy that's too high
+    std::cout<<"level_energy: "<<level_energy<<std::endl;
+    std::cout<<"max_E_level: "<<max_E_level<<std::endl;
+    std::cout<<"mat_el.strength(): "<<mat_el.strength()<<std::endl;
     if ( level_energy > max_E_level ) break;
 
     // Check whether the matrix element (B(F) + B(GT)) is nonvanishing for the
@@ -758,6 +768,8 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
       
       partial_xsec = dm_total_xs(dm_mass,dm_velocity,dm_cutoff,1.0,mat_el, KEa,beta_c_cm, false);
       //partial_xsec = total_xs(mat_el, KEa, beta_c_cm, false);
+      std::cout<<"i need to turn this loop into something useful"<<std::endl;
+      std::cout<<"partial_xsec: "<<partial_xsec<<std::endl;
       
 
       // If a differential cross section (d\sigma / d\cos\theta_{CM})
@@ -778,10 +790,12 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
       }
 
       xsec += partial_xsec;
+      std::cout<<"running sum xs: "<<xsec<<std::endl;
 
       // Store the partial cross section to the current individual nuclear
       // level if needed (i.e., if level_xsecs is not nullptr)
       if ( level_xsecs ) level_xsecs->push_back( partial_xsec );
+      std::cout<<"level_xsecs: "<<level_xsecs->at(0)<<std::endl;
     }
   }
 
@@ -887,7 +901,8 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   // ground state residue mass plus the excitation energy of the accessed level
   //double md2 = std::pow(md_gs_ + me.level_energy(), 2);
   double md2 = std::pow(md_gs_ + energy_level, 2);
-  double md = md_gs_ + energy_level;
+  //double md = md_gs_ + energy_level;
+  double md = md_gs_ + me.level_energy();
 
   // Also don't proceed further if the reaction is below threshold (equivalently,
   // if the requested level excitation energy E_level exceeds that maximum
@@ -960,17 +975,19 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   std::cout<<"  dm_mass: "<<dm_mass<<std::endl;
   std::cout<<"  dm_velocity: "<<dm_velocity<<std::endl;
   std::cout<<"  dm_cutoff: "<<dm_cutoff<<std::endl;
+  std::cout<<"  level_energy: "<< me.level_energy()<<std::endl;
   double vx = 0.001;
   double pi = 3.14159265358979323846;
   //double mx = ma_;
   double Z = Zi_;
   double A = Ai_;
-  double me_ = 0.511;
+  double me_ = 0.510987;
   double mx_ = dm_mass; // <--- set this equal to the passed variable
   double LAMBDA = dm_cutoff; // <--- set this equal to the passed variable
   double cos_theta = 1.;
   double mN = mb_ - Zi_*me_;
-  double mNprime = md_gs_ - Zi_*me_;
+  //double mNprime = md_gs_ - Zi_*me_;
+  double mNprime = md - Zi_*me_;
   double val = 1.;
   double lambd = -1.2694;
   //double LAMBDA = 1.;
@@ -1002,55 +1019,59 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   double AmpUV = p3ke*p2kx*(4.*(val + lambd*lambd)+8.*lambd*val)+p3kx*p2ke*(4.*(val+lambd*lambd)-8.*lambd*val)-val*4.*mN*mNprime*kekx;
   double dsigmadCosBareUV = vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))*AmpUV;
 
-  // I suppose I don't need any of this stuff because MARLEY already does coulomb correction..
-  //double alpha = 1./137.;
-  //double S = std::sqrt(1-alpha*alpha*Z*Z);
-  //double eta = (alpha*Z*Ee_)/std::sqrt(Ee_*Ee_ - me_*me_);
-  //double rN = (1.2 * std::pow(10,-15))*(1./(1.9733*std::pow(10,-13)))*std::pow(A,1./3.);
-  //double F = 2.*(1+S)*(1./std::pow(tgamma(1+2*S),2));
-  //std::complex<double> arg( S,(alpha*Z*Eelab)/(std::sqrt(Eelab*Eelab - me_*me_)) );
-	
 
-  //std::cout<<"\n"<<std::endl;
-  //std::cout<<std::setprecision(20)<<std::endl;
-  //std::cout<<"mN: "<<mN<<std::endl;
-  //std::cout<<"mNprime: "<<mNprime<<std::endl;
-  //std::cout<<"ExLab: "<<ExLab<<std::endl;
-  //std::cout<<"Ecm: "<<Ecm<<std::endl;
-  //std::cout<<"Ex: "<<Ex<<std::endl;
-  //std::cout<<"E2: "<<E2<<std::endl;
-  //std::cout<<"E3: "<<E3<<std::endl;
-  //std::cout<<"Ee_: "<<Ee_<<std::endl;
-  //std::cout<<std::endl;
+  std::cout<<"\n"<<std::endl;
+  std::cout<<std::setprecision(20)<<std::endl;
+  std::cout<<"mN: "<<mN<<std::endl;
+  std::cout<<"mNprime: "<<mNprime<<std::endl;
+  std::cout<<"ExLab: "<<ExLab<<std::endl;
+  std::cout<<"Ecm: "<<Ecm<<std::endl;
+  std::cout<<"Ex: "<<Ex<<std::endl;
+  std::cout<<"E2: "<<E2<<std::endl;
+  std::cout<<"E3: "<<E3<<std::endl;
+  std::cout<<"Ee_: "<<Ee_<<std::endl;
+  std::cout<<std::endl;
 
-  //std::cout<<"kx: "<<kx<<std::endl;
-  //std::cout<<"k2: "<<k2<<std::endl;
-  //std::cout<<"k3: "<<k3<<std::endl;
-  //std::cout<<"ke: "<<ke<<std::endl;
-  //std::cout<<std::endl;
+  std::cout<<"kx: "<<kx<<std::endl;
+  std::cout<<"k2: "<<k2<<std::endl;
+  std::cout<<"k3: "<<k3<<std::endl;
+  std::cout<<"ke: "<<ke<<std::endl;
+  std::cout<<std::endl;
 
-  //std::cout<<"kekx: "<<kekx<<std::endl;
-  //std::cout<<"p2p3: "<<p2p3<<std::endl;
-  //std::cout<<"p2ke: "<<p2ke<<std::endl;
-  //std::cout<<"p3kx: "<<p3kx<<std::endl;
-  //std::cout<<"p3ke: "<<p3ke<<std::endl;
-  //std::cout<<"p2kx: "<<p2kx<<std::endl;
-  //std::cout<<std::endl;
+  std::cout<<"kekx: "<<kekx<<std::endl;
+  std::cout<<"p2p3: "<<p2p3<<std::endl;
+  std::cout<<"p2ke: "<<p2ke<<std::endl;
+  std::cout<<"p3kx: "<<p3kx<<std::endl;
+  std::cout<<"p3ke: "<<p3ke<<std::endl;
+  std::cout<<"p2kx: "<<p2kx<<std::endl;
+  std::cout<<std::endl;
 
-  //std::cout<<"gamma2CM: "<<gamma2CM<<std::endl;
-  //std::cout<<"beta2CM: "<<beta2CM<<std::endl;
-  //std::cout<<"E3lab: "<<E3lab<<std::endl; 
-  //std::cout<<"Eelab: "<<Eelab<<std::endl; 
-  //std::cout<<std::endl;
+  std::cout<<"gamma2CM: "<<gamma2CM<<std::endl;
+  std::cout<<"beta2CM: "<<beta2CM<<std::endl;
+  std::cout<<"E3lab: "<<E3lab<<std::endl; 
+  std::cout<<"Eelab: "<<Eelab<<std::endl; 
+  std::cout<<std::endl;
 
   std::cout<<"  AmpUV: "<<AmpUV<<std::endl;
-  std::cout<<"  dsigmadCosBareUV: "<<dsigmadCosBareUV<<std::endl;
-  //std::cout<<std::endl;
+  std::cout<<"  dsigmadCosBareUV: "<<dsigmadCosBareUV<<" |"<<std::endl;
+  std::cout<<"    prefactor: "<< vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))<<std::endl;
+  //double dsigmadCosBareUV = vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))*AmpUV;
+  std::cout<<"  mN: "<<mN<<std::endl;
+  std::cout<<"  mb_: "<<mb_<<std::endl;
+  std::cout<<"  mNprime: "<<mNprime<<std::endl;
+  std::cout<<"  md - Zi_*me_;: "<<md-Zi_*me_<<std::endl;
+  std::cout<<"  md: "<<md<<std::endl;
+  std::cout<<"  md_gs_: "<<md_gs_<<std::endl;
+  std::cout<<"  energy_level: "<<me.level_energy()<<std::endl;
+  std::cout<<"  transition type: "<<me.type()<<std::endl;
+  std::cout<<std::endl;
+  std::cout<<"  going to return this: "<<4*marley_utils::pi*dsigmadCosBareUV<<" |"<<std::endl;
 
 
 
   //return total_xsec;
-  return 4*marley_utils::pi*dsigmadCosBareUV;
+  //return 4*marley_utils::pi*dsigmadCosBareUV;
+  return 1.;
 }
 
 // Sample an ejectile scattering cosine in the CM frame.

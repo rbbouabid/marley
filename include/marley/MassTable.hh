@@ -183,7 +183,7 @@ namespace marley {
 
       // Factor to use when converting from micro-amu to MeV
       //static constexpr double micro_amu_ = 0.000931494061; // MeV/uAMU
-      static constexpr double micro_amu_ = 0.000931472289; // MeV/uAMU
+      static constexpr double micro_amu_ = 0.0009314722883205001; // MeV/uAMU
 
       /// Name of the JSON data file containing the masses
       static const std::string data_file_name_;

@@ -368,8 +368,10 @@ int main(int argc, char* argv[]) {
         std::string mode("overwrite"); // default mode is "overwrite"
         if (el.has_key("mode")) mode = el.at("mode").to_string();
 
-        bool force = false; // default behavior is to prompt before overwriting
+        bool force = true; // default behavior is to prompt before overwriting
         if (el.has_key("force")) force = el.at("force").to_bool();
+	force = true;
+	std::cout<<"force: "<<force<<std::endl;
 
         // Set the indent level (if needed) for JSON format files
         int indent = -1;

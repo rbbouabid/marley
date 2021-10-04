@@ -25,7 +25,7 @@ endif
 CXX = g++
 CXXFLAGS += -Wall -Wextra -Wpedantic -Wcast-align
 
-all: marprint mardumpxs
+all: mardumpxs mardumpdmxs
 debug: all
 
 # Use the marley-config script to get the MARLEY compiler flags and
@@ -40,13 +40,17 @@ OBJECTS := $(notdir $(patsubst %.cc,%.o,$(wildcard $(SRC_DIR)/*.cc)))
 %.o: $(SRC_DIR)/%.cc
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -o $@ -c $^
 
-marprint: marprint.o
-	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) marprint.o
+#marprint: marprint.o
+#	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) marprint.o
 
 mardumpxs: mardumpxs.o
 	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) mardumpxs.o
 
+mardumpdmxs: mardumpdmxs.o
+	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) mardumpdmxs.o
+
 .PHONY: clean
 
 clean:
-	$(RM) *.o marprint mardumpxs
+	#$(RM) *.o marprint mardumpxs
+	$(RM) *.o mardumpdmxs mardumpxs

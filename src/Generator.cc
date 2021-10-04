@@ -68,7 +68,7 @@ marley::Event marley::Generator::create_event() {
 
   // (1) Select a reacting neutrino energy and reaction using the
   // flux-weighted total cross section(s)
-  double E_nu;
+  double E_nu = 10;
   std::cout<<"print this before everything fucked"<<std::endl;
   marley::Reaction& r = sample_reaction( E_nu );
 
@@ -76,7 +76,8 @@ marley::Event marley::Generator::create_event() {
   // sampled reaction object
   std::cout<<" is this before all the loops?"<<std::endl;
   std::cout<<" do I get to know the process at this stage in generator.cc?"<<std::endl;
-  marley::Event ev = r.create_event( source_->get_pid(), E_nu, source_->get_Emax(), 1., source_->get_Emin(),*this );
+  //std::cout<<" E_nu: "<<E_nu<<std::endl;
+  marley::Event ev = r.create_event( source_->get_pid(), 1.59, source_->get_Emax(), 1., source_->get_Emin(),*this );
   std::cout<<" this is after create_event() inside of Generator.cc"<<std::endl;
   std::cout<<"source_.dm_mass: "<<source_->get_Emax()<<std::endl;
   std::cout<<"source_.dm_UV: "<<source_->get_Emin()<<std::endl;

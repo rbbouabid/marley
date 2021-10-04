@@ -81,7 +81,8 @@ namespace marley_utils {
 
   // Conversion factor to use when expressing atomic masses (micro-amu)
   // in standard MARLEY energy units (MeV)
-  constexpr double micro_amu = 0.000931494061;
+  //constexpr double micro_amu = 0.000931494061;
+  constexpr double micro_amu = 0.0009314722883205001;
 
   // Infinities
   constexpr double infinity = std::numeric_limits<double>::max();
