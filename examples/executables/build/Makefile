@@ -25,12 +25,13 @@ endif
 CXX = g++
 CXXFLAGS += -Wall -Wextra -Wpedantic -Wcast-align
 
-all: mardumpxs mardumpdmxs
+all: mardumpxs marprint mardumpdmxs
 debug: all
 
 # Use the marley-config script to get the MARLEY compiler flags and
 # library names.
 override CXXFLAGS += $(shell marley-config --cflags)
+override CXXFLAGS += -Wl,--no-as-needed
 MARLEY_LIBS = $(shell marley-config --libs)
 
 OBJECTS := $(notdir $(patsubst %.cc,%.o,$(wildcard $(SRC_DIR)/*.cc)))
@@ -40,8 +41,8 @@ OBJECTS := $(notdir $(patsubst %.cc,%.o,$(wildcard $(SRC_DIR)/*.cc)))
 %.o: $(SRC_DIR)/%.cc
 	$(CXX) $(CXXFLAGS) -I$(INCLUDE_DIR) -o $@ -c $^
 
-#marprint: marprint.o
-#	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) marprint.o
+marprint: marprint.o
+	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) marprint.o
 
 mardumpxs: mardumpxs.o
 	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) mardumpxs.o
@@ -49,8 +50,10 @@ mardumpxs: mardumpxs.o
 mardumpdmxs: mardumpdmxs.o
 	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) mardumpdmxs.o
 
+#mardumpdmxs: mardumpdmxs.o
+#	$(CXX) $(CXXFLAGS) -o $@ $(MARLEY_LIBS) mardumpdmxs.o
+
 .PHONY: clean
 
 clean:
-	#$(RM) *.o marprint mardumpxs
-	$(RM) *.o mardumpdmxs mardumpxs
+	$(RM) *.o marprint mardumpxs mardumpdmxs

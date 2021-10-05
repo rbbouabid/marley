@@ -37,12 +37,14 @@
 namespace {
   // Default settings for the projectile kinetic energy range and number of
   // steps for the total cross section dump
-  constexpr double DEFAULT_KE_MIN = 0.;
-  constexpr double DEFAULT_KE_MAX = 100.;
-  constexpr int DEFAULT_NUM_STEPS = 10000;
+  constexpr double DEFAULT_MASS_MIN = 0.1;
+  constexpr double DEFAULT_MASS_MAX = 50.;
+  constexpr double DEFAULT_LAMBDA_MIN = 10000000.;
+  constexpr double DEFAULT_LAMBDA_MAX = 100000000.;
+  constexpr int DEFAULT_NUM_STEPS = 10;
 
   // Default projectile PDG code
-  constexpr int DEFAULT_PDG = marley_utils::ELECTRON_NEUTRINO;
+  constexpr int DEFAULT_PDG = marley_utils::DM;
 
   // Helper functions for loading custom dump parameters from the job
   // configuration file
@@ -117,8 +119,10 @@ int main(int argc, char* argv[]) {
 
   // Initialize the projectile kinetic energy range and step size to use for
   // the total cross section dump
-  double KEmin = DEFAULT_KE_MIN;
-  double KEmax = DEFAULT_KE_MAX;
+  double dm_mass_min = DEFAULT_MASS_MIN;
+  double dm_mass_max = DEFAULT_MASS_MAX;
+  double UV_cutoff_min = DEFAULT_LAMBDA_MIN;
+  double UV_cutoff_max = DEFAULT_LAMBDA_MAX;
   int num_steps = DEFAULT_NUM_STEPS;
   int projectile_pdg = DEFAULT_PDG;
 
@@ -126,43 +130,48 @@ int main(int argc, char* argv[]) {
   // retrieve that information from the config file.
   const marley::JSON& json = config.get_json();
 
-  get_double_dump_param( json, "xsec_dump_KEmin", KEmin );
-  get_double_dump_param( json, "xsec_dump_KEmax", KEmax );
+  //get_double_dump_param( json, "xsec_dump_KEmin", KEmin );
+  //get_double_dump_param( json, "xsec_dump_KEmax", KEmax );
 
-  get_int_dump_param( json, "xsec_dump_steps", num_steps );
-  get_int_dump_param( json, "xsec_dump_pdg", projectile_pdg );
+  //get_int_dump_param( json, "xsec_dump_steps", num_steps );
+  //get_int_dump_param( json, "xsec_dump_pdg", projectile_pdg );
 
   // Compute the (linear) step size based on the number of steps and the
   // desired projectile energy range
-  double delta_KE_step = ( KEmax - KEmin ) / num_steps;
+  double delta_mass_step = ( dm_mass_max - dm_mass_min ) / num_steps;
+  double delta_cutoff_step = ( UV_cutoff_max - UV_cutoff_min ) / num_steps;
 
   // Initial projectile energy to use in the loop
-  double KE = KEmin;
+  double dm_mass = dm_mass_min;
+  double UV_cutoff = UV_cutoff_min;
+
+  std::cout<<"Debugging the dumpdmxs function!"<<std::endl;
+  std::cout<<"Masses will range from "<<dm_mass_min<<" to "<<dm_mass_max<<std::endl;
 
   // Ready for the dump now
-  // Energies are dumped in units of MeV
-  // Cross section values are dumped in units of 10^(-42) cm^2 / atom
   for ( int s = 0; s < num_steps; ++s ) {
 
     // Update the projectile energy for this step
-    KE += delta_KE_step;
+    dm_mass += delta_mass_step;
 
-    // Compute the total cross section at this projectile
-    // energy (summed over all active reactions and weighted
-    // by nuclide abundance in the target material)
-    double xsec = gen.total_xs( projectile_pdg, KE );
+    for ( int r = 0; r < num_steps; ++r ) {
+    
+      UV_cutoff +=delta_cutoff_step;
 
-    // Convert the total cross section from MARLEY natural units (MeV^{-2}) to
-    // conventional units (10^{-42} cm^2)
-    xsec *= marley_utils::hbar_c2 * marley_utils::fm2_to_minus40_cm2 * 1e2;
+      // Compute the total cross section at this projectile
+      //double xsec = gen.total_xs( projectile_pdg, KE );
+      double dm_xsec = gen.total_xs();
 
-    // Write the current kinetic energy and total cross section to the output
-    // file
-    out_file << KE << ' ' << xsec << '\n';
 
-    // Also write these quantities to the Logger
-    MARLEY_LOG_INFO() << "KE = " << KE << " MeV, abundance-weighted total xsec = "
-      << xsec << " \u00D7 10^{-42} cm^2 / atom";
+      // Write the current kinetic energy and total cross section to the output
+      // file
+      out_file << dm_mass << ' ' << UV_cutoff << ' '<< dm_xsec << '\n';
+
+      // Also write these quantities to the Logger
+      MARLEY_LOG_INFO() << "dm mass = " << dm_mass << ", UV cutoff = " << UV_cutoff << ", dm total xsec = "
+        << dm_xsec << '\n';
+    }
+
   }
 
   return 0;
