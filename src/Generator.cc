@@ -69,18 +69,11 @@ marley::Event marley::Generator::create_event() {
   // (1) Select a reacting neutrino energy and reaction using the
   // flux-weighted total cross section(s)
   double E_nu = 10;
-  std::cout<<"print this before everything fucked"<<std::endl;
   marley::Reaction& r = sample_reaction( E_nu );
 
   // (2) Create the prompt two-two scattering event using the
   // sampled reaction object
-  std::cout<<" is this before all the loops?"<<std::endl;
-  std::cout<<" do I get to know the process at this stage in generator.cc?"<<std::endl;
-  //std::cout<<" E_nu: "<<E_nu<<std::endl;
   marley::Event ev = r.create_event( source_->get_pid(), 1.59, source_->get_Emax(), 1., source_->get_Emin(),*this );
-  std::cout<<" this is after create_event() inside of Generator.cc"<<std::endl;
-  std::cout<<"source_.dm_mass: "<<source_->get_Emax()<<std::endl;
-  std::cout<<"source_.dm_UV: "<<source_->get_Emin()<<std::endl;
 
   // (3) If needed, de-excite the final-state residue
   if ( do_deexcitations_ ) {
@@ -165,7 +158,6 @@ void marley::Generator::normalize_E_pdf() {
 
     norm_ = 1.; // extremely silly and dumb hack TODO: change this dumb hack
 
-    std::cout<<"norm_: "<<norm_<<std::endl;
 
     if ( norm_ <= 0. || std::isnan(norm_) ) {
       throw marley::Error( "The integral of the cross-section-weighted"
@@ -283,7 +275,6 @@ double marley::Generator::E_pdf(double E) {
   // Sum all of the reaction total cross sections, saving
   // each individual value along the way. Take weighting
   // by atom fraction in the target material into account.
-  std::cout<<"reactions_.size(): "<<reactions_.size()<<std::endl;
   for ( size_t j = 0, s = reactions_.size(); j < s; ++j ) {
 
     // Get the current reaction
@@ -291,7 +282,6 @@ double marley::Generator::E_pdf(double E) {
 
     // Compute the total cross section for the current reaction for a single
     // target atom
-    std::cout<<"here2"<<std::endl;
     double tot_xs = react->total_xs( source_->get_pid(), E );
 
     // If the target_ member has not been initialized, don't bother doing any
@@ -608,13 +598,11 @@ double marley::Generator::total_xs( int pdg_a, double KEa, int pdg_atom,
 marley::Event marley::Generator::create_event( int pdg_a, double KEa,
   int pdg_atom, const std::array<double, 3>& dir_vec )
 {
-  std::cout<<"i get here -- generator.cc"<<std::endl;
   // (1) Sample a reaction mode from all configured reactions that can handle
   // the given initial-state parameters
   std::vector<size_t> indices;
   std::vector<double> xsecs;
   double tot_xsec = this->total_xs( pdg_a, KEa, pdg_atom, &indices, &xsecs );
-  std::cout<<" is this after all the loop stuff?"<<std::endl;
 
   if ( xsecs.empty() || tot_xsec <= 0. ) throw marley::Error(
     "Cannot create an event for a projectile with kinetic energy = "
@@ -666,8 +654,38 @@ double marley::Generator::total_xs( int pdg_a, double KEa ) const {
 
     // Compute the total cross section for the current reaction for a single
     // target atom
-	  std::cout<<"222"<<std::endl;
     double xsec = react->total_xs( pdg_a, KEa );
+
+    // If the target_ member has not been initialized, don't bother doing any
+    // weighting by atom fraction (equivalent to a weight of unity for all
+    // target atoms)
+    if ( target_ ) {
+      // If it has been configured, then apply the appropriate atom fraction
+      // weight from the target as appropriate.
+      xsec *= target_->atom_fraction( react->atomic_target() );
+    }
+
+    // Add the weighted total cross section value to the total
+    tot_xsec += xsec;
+  }
+
+  return tot_xsec;
+}
+
+// trying to overload another function here to call in examples/executables/dumpdmxs()
+double marley::Generator::total_xs( int pdg_a, double KEa, double mass, double cutoff ) const {
+
+  // Initialize the return value to zero
+  double tot_xsec = 0.;
+
+  // Sum all of the reaction total cross sections. Take weighting by atom
+  // fraction in the target material into account.
+  for ( const auto& react : reactions_ ) {
+
+    // Compute the total cross section for the current reaction for a single
+    // target atom
+    //double xsec = react->total_xs( pdg_a, KEa );
+    double xsec = react->total_xs( pdg_a, KEa, mass, cutoff );
 
     // If the target_ member has not been initialized, don't bother doing any
     // weighting by atom fraction (equivalent to a weight of unity for all

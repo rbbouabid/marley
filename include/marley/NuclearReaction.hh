@@ -94,7 +94,10 @@ namespace marley {
       /// @param KEa Lab-frame kinetic energy (MeV) of the projectile
       /// @return Reaction total cross section (MeV<sup> -2</sup>)
       /// @note This function returns 0. if pdg_a != pdg_a_.
-      virtual double total_xs(int pdg_a, double KEa) const override;
+      //virtual double total_xs(int pdg_a, double KEa) const;// override;
+      //virtual double total_xs(int pdg_a, double KEa, double dm_mass, double UV_cutoff) const;// override;
+      virtual double total_xs(int pdg_a, double KEa) const;// override;
+      virtual double total_xs(int pdg_a, double KEa, double dm_mass, double UV_cutoff) const;// override;
 
       /// @brief Differential cross section
       /// @f$d\sigma/d\cos\theta_{c}^{\mathrm{CM}}@f$

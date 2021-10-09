@@ -45,6 +45,7 @@ namespace marley {
       // Total reaction cross section (in MeV^(-2)) for an incident
       // projectile with lab-frame kinetic energy Ea
       virtual double total_xs(int pdg_a, double KEa) const override;
+      virtual double total_xs(int pdg_a, double KEa, double dm_mass, double UV_cutoff) const override;
 
       // Differential cross section (MeV^(-2)) in the CM frame
       virtual double diff_xs(int pdg_a, double KEa, double cos_theta_c_cm)

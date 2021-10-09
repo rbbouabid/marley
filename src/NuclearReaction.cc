@@ -97,8 +97,8 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
   else mb_ = mt.get_particle_mass( pdg_b_ );
 
   //std::cout<<std::setprecision(20)<<std::endl;
-  std::cout<<"debugging mass: "<<std::endl;
-  std::cout<<"pdg_b_: "<<pdg_b_<<std::endl;
+  //std::cout<<"debugging mass: "<<std::endl;
+  //std::cout<<"pdg_b_: "<<pdg_b_<<std::endl;
   //std::cout<<"mt.get_atomic_mass: "<<mb_<<std::endl;
 
   if ( pdg_d_ > 1000000000 ) {
@@ -108,8 +108,8 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
     // (i.e., neutral) ground state mass.
     md_gs_ = mt.get_atomic_mass(pdg_d_)
       - (q_d_ * mt.get_particle_mass(marley_utils::ELECTRON));
-    std::cout<<"debugging mass: "<<std::endl;
-    std::cout<<"pdg_d_: "<<pdg_d_<<std::endl;
+    //std::cout<<"debugging mass: "<<std::endl;
+    //std::cout<<"pdg_d_: "<<pdg_d_<<std::endl;
     //std::cout<<"mt.get_atomic_mass: "<<mt.get_atomic_mass(pdg_d_)<<std::endl;
     //std::cout<<"z*me: "<<q_d_*mt.get_particle_mass(marley_utils::ELECTRON)<<std::endl;
     //std::cout<<"q_d_: "<<q_d_<<std::endl;
@@ -119,11 +119,11 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
   }
 
   if(process_type_ == 4) {
-    std::cout<<"I got here! It's a dark matter event"<<std::endl;
-    std::cout<<"threshold mass is given by: md_gs_ + mc_ - mb_"<<std::endl;
-    std::cout<<"md_gs_: "<<md_gs_<<std::endl;
-    std::cout<<"mc_: "<<mc_<<std::endl;
-    std::cout<<"mb_: "<<mb_<<std::endl;
+    //std::cout<<"I got here! It's a dark matter event"<<std::endl;
+    //std::cout<<"threshold mass is given by: md_gs_ + mc_ - mb_"<<std::endl;
+    //std::cout<<"md_gs_: "<<md_gs_<<std::endl;
+    //std::cout<<"mc_: "<<mc_<<std::endl;
+    //std::cout<<"mb_: "<<mb_<<std::endl;
     KEa_threshold_ = md_gs_ + mc_ - mb_;
   }
   else {
@@ -131,24 +131,24 @@ marley::NuclearReaction::NuclearReaction(ProcType pt, int pdg_a, int pdg_b,
       - std::pow(ma_ + mb_, 2))/(2.*mb_);
   }
 
-  std::cout<<"Event dump for cross checking."<<std::endl;
-  std::cout<<"Particle a: "<<std::endl;
-  std::cout<<"\tpdg a: "<<pdg_a<<std::endl;
-  std::cout<<"\tmass a: "<<ma_<<std::endl;
-  std::cout<<std::endl;
-  std::cout<<"Particle b: "<<std::endl;
-  std::cout<<"\tpdg b: "<<pdg_b<<std::endl;
-  std::cout<<"\tmass b: "<<mb_<<std::endl;
-  std::cout<<std::endl;
-  std::cout<<"Particle c: "<<std::endl;
-  std::cout<<"\tpdg c: "<<pdg_c<<std::endl;
-  std::cout<<"\tmass c: "<<mc_<<std::endl;
-  std::cout<<std::endl;
-  std::cout<<"Particle d: "<<std::endl;
-  std::cout<<"\tpdg d: "<<pdg_d<<std::endl;
-  std::cout<<"\tmass d: "<<md_gs_<<std::endl;
+  //std::cout<<"Event dump for cross checking."<<std::endl;
+  //std::cout<<"Particle a: "<<std::endl;
+  //std::cout<<"\tpdg a: "<<pdg_a<<std::endl;
+  //std::cout<<"\tmass a: "<<ma_<<std::endl;
+  //std::cout<<std::endl;
+  //std::cout<<"Particle b: "<<std::endl;
+  //std::cout<<"\tpdg b: "<<pdg_b<<std::endl;
+  //std::cout<<"\tmass b: "<<mb_<<std::endl;
+  //std::cout<<std::endl;
+  //std::cout<<"Particle c: "<<std::endl;
+  //std::cout<<"\tpdg c: "<<pdg_c<<std::endl;
+  //std::cout<<"\tmass c: "<<mc_<<std::endl;
+  //std::cout<<std::endl;
+  //std::cout<<"Particle d: "<<std::endl;
+  //std::cout<<"\tpdg d: "<<pdg_d<<std::endl;
+  //std::cout<<"\tmass d: "<<md_gs_<<std::endl;
 
-  std::cout<<"threshold mass required: "<<KEa_threshold_<<std::endl;
+  //std::cout<<"threshold mass required: "<<KEa_threshold_<<std::endl;
 
   this->set_description();
 }
@@ -248,8 +248,8 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
   // (d\sigma/d\cos\theta_c^{CM}) cross sections, so supply a dummy cos_theta_c_cm
   // value and request total cross sections by setting the last argument to false.
   double dummy = 0.;
-  std::cout<<"summed_xs_helper called here3"<<std::endl;
-  std::cout<<" any chance you can access process_type_ here?: "<<process_type_<<std::endl;
+  //std::cout<<"summed_xs_helper called here3"<<std::endl;
+  //std::cout<<" any chance you can access process_type_ here?: "<<process_type_<<std::endl;
   double sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dummy,
     						&level_weights, false);
 
@@ -261,6 +261,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
   // object.
 
   // Complain if none of the levels we have data for are kinematically allowed
+  std::cout<<"Does it break here1?"<<std::endl;
   if ( level_weights.empty() ) {
     throw marley::Error("Could not create this event. The DecayScheme object"
       " associated with this reaction does not contain data for any"
@@ -419,8 +420,8 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
 
   // Sample a final residue energy level. First, check to make sure the given
   // projectile energy is above threshold for this reaction.
-  std::cout<<"KEa: "<<KEa<<std::endl;
-  std::cout<<"KEa_threshold_: "<<KEa_threshold_<<std::endl;
+  //std::cout<<"KEa: "<<KEa<<std::endl;
+  //std::cout<<"KEa_threshold_: "<<KEa_threshold_<<std::endl;
   if ( KEa < KEa_threshold_ ) throw std::range_error(std::string("Could")
     + " not create this event. Projectile kinetic energy " + std::to_string(KEa)
     + " MeV is below the threshold value " + std::to_string(KEa_threshold_)
@@ -446,8 +447,8 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
   // value and request total cross sections by setting the last argument to false.
   double dummy = 0.;
   double sum_of_xsecs;
-  std::cout<<"summed_xs_helper called here1"<<std::endl;
-  std::cout<<" any chance you can access process_type_ here?: "<<process_type_<<std::endl;
+  //std::cout<<"summed_xs_helper called here1"<<std::endl;
+  //std::cout<<" any chance you can access process_type_ here?: "<<process_type_<<std::endl;
   if ( process_type_ == 4 ) {
     sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dm_mass, dm_velocity, dm_cutoff, dummy, &level_weights, false);
   } // <---- if it's dm use the dm version of summed_xs_helper
@@ -456,7 +457,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
     sum_of_xsecs = summed_xs_helper(pdg_a, KEa, dummy,
       &level_weights, false);
   }
-  std::cout<<"sum_of_xsecs: "<<sum_of_xsecs<<" |"<<std::endl;
+  //std::cout<<"sum_of_xsecs: "<<sum_of_xsecs<<" |"<<std::endl;
   // Note that the elements in matrix_elements_ are given in order of
   // increasing excitation energy (this is currently enforced by the reaction
   // data format and is checked during parsing). This ensures that we can
@@ -465,6 +466,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
   // object.
 
   // Complain if none of the levels we have data for are kinematically allowed
+  std::cout<<"Does it break here2?"<<std::endl;
   if ( level_weights.empty() ) {
     throw marley::Error("Could not create this event. The DecayScheme object"
       " associated with this reaction does not contain data for any"
@@ -497,7 +499,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
   // Get the energy of the selected level.
   double E_level = sampled_matrix_el.level_energy();
   std::cout<<std::endl;
-  std::cout<<"E_level: "<<E_level<<std::endl;
+  //std::cout<<"E_level: "<<E_level<<std::endl;
   std::cout<<std::endl;
 
   // Update the residue mass based on its excitation energy for the current
@@ -618,8 +620,21 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
 // in units of MeV^(-2) using the center of momentum frame.
 double marley::NuclearReaction::total_xs(int pdg_a, double KEa) const {
   double dummy_cos_theta = 0.;
-  std::cout<<"summed_xs_helper called here2"<<std::endl;
+  //std::cout<<"summed_xs_helper called here2"<<std::endl;
   return summed_xs_helper(pdg_a, KEa, dummy_cos_theta, nullptr, false);
+}
+
+// Compute the total reaction cross section (summed over all final nuclear levels)
+// in units of MeV^(-2) using the center of momentum frame.
+double marley::NuclearReaction::total_xs(int pdg_a, double KEa, double dm_mass, double UV_cutoff) const {
+  double dummy_cos_theta = 0.;
+  //std::cout<<"dark matter summed_xs_helper called !"<<std::endl;
+  //return summed_xs_helper(pdg_a, KEa, dummy_cos_theta, nullptr, false);
+  //return 1.;
+  summed_xs_helper(pdg_a, KEa, dm_mass, 0.001, UV_cutoff, dummy_cos_theta, nullptr, false);
+
+// double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double dm_mass, double dm_velocity, double dm_cutoff,
+//   double cos_theta_c_cm, std::vector<double>* level_xsecs, bool differential)
 }
 
 // Compute the differential cross section d\sigma / d\cos\theta_c^{CM}
@@ -678,9 +693,9 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa,
     // Get the excitation energy for the current level
     count++;
     double level_energy = mat_el.level_energy();
-    std::cout<<"energy level: "<<level_energy<<std::endl;
-    std::cout<<"mat strength: "<<mat_el.strength()<<std::endl;
-    std::cout<<"count: "<<count<<std::endl;
+    //std::cout<<"energy level: "<<level_energy<<std::endl;
+    //std::cout<<"mat strength: "<<mat_el.strength()<<std::endl;
+    //std::cout<<"count: "<<count<<std::endl;
 
     // Exit the loop early if you reach a level with an energy that's too high
     if ( level_energy > max_E_level ) break;
@@ -735,6 +750,7 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
   double cos_theta_c_cm, std::vector<double>* level_xsecs, bool differential)
   const
 {
+  //std::cout<<"if you get here. you're just a little closer"<<std::endl;
   if (pdg_a != pdg_a_) return 0.;
   if ( differential && std::abs(cos_theta_c_cm) > 1. ) return 0.;
   if ( dm_mass <= 0. ) return 0.;
@@ -752,9 +768,9 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
     double level_energy = mat_el.level_energy();
 
     // Exit the loop early if you reach a level with an energy that's too high
-    std::cout<<"level_energy: "<<level_energy<<std::endl;
-    std::cout<<"max_E_level: "<<max_E_level<<std::endl;
-    std::cout<<"mat_el.strength(): "<<mat_el.strength()<<std::endl;
+    //std::cout<<"level_energy: "<<level_energy<<std::endl;
+    //std::cout<<"max_E_level: "<<max_E_level<<std::endl;
+    //std::cout<<"mat_el.strength(): "<<mat_el.strength()<<std::endl;
     if ( level_energy > max_E_level ) break;
 
     // Check whether the matrix element (B(F) + B(GT)) is nonvanishing for the
@@ -771,8 +787,8 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
       
       partial_xsec = dm_total_xs(dm_mass,dm_velocity,dm_cutoff,1.0,mat_el, KEa,beta_c_cm, true);
       //partial_xsec = total_xs(mat_el, KEa, beta_c_cm, false);
-      std::cout<<"i need to turn this loop into something useful"<<std::endl;
-      std::cout<<"partial_xsec: "<<partial_xsec<<std::endl;
+      //std::cout<<"i need to turn this loop into something useful"<<std::endl;
+      //std::cout<<"partial_xsec: "<<partial_xsec<<std::endl;
       
 
       // If a differential cross section (d\sigma / d\cos\theta_{CM})
@@ -793,12 +809,12 @@ double marley::NuclearReaction::summed_xs_helper(int pdg_a, double KEa, double d
       }
 
       xsec += partial_xsec;
-      std::cout<<"running sum xs: "<<xsec<<std::endl;
+      //std::cout<<"running sum xs: "<<xsec<<std::endl;
 
       // Store the partial cross section to the current individual nuclear
       // level if needed (i.e., if level_xsecs is not nullptr)
       if ( level_xsecs ) level_xsecs->push_back( partial_xsec );
-      std::cout<<"level_xsecs: "<<level_xsecs->at(0)<<std::endl;
+      //std::cout<<"level_xsecs: "<<level_xsecs->at(0)<<std::endl;
     }
   }
 
@@ -892,7 +908,7 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
 		double energy_level, const marley::MatrixElement& me,
   		double KEa, double& beta_c_cm, bool check_max_E_level) const
 {
-  std::cout<<"Computing Dark Matter differential xs for a specific nuclear transition"<<std::endl;
+  //std::cout<<"Computing Dark Matter differential xs for a specific nuclear transition"<<std::endl;
 
   // Want to check these checks 
  
@@ -912,8 +928,8 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   // kinematically-allowed value). To avoid redundant checks of the threshold,
   // skip this check if check_max_E_level is set to false.
   double m_thresh = md + 0.511 - mb_;
-  std::cout<<"dm_mass: "<<dm_mass<<std::endl;
-  std::cout<<"m_thresh: "<<m_thresh<<std::endl;
+  //std::cout<<"dm_mass: "<<dm_mass<<std::endl;
+  //std::cout<<"m_thresh: "<<m_thresh<<std::endl;
   if ( check_max_E_level ) {
     if ( dm_mass < m_thresh ) return 0.;
   }
@@ -975,13 +991,13 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   // Total cross section will just call this function and multiply by 4pi or something
   // Once you get this done it's pretty close to being done I think..
   // Comes down to inputting the correct matrix elements
-  std::cout<<"New test time!"<<std::endl;
-  std::cout<<"  was passed some variables.."<<std::endl;
-  std::cout<<"  dm_mass: "<<dm_mass<<std::endl;
-  std::cout<<"  dm_velocity: "<<dm_velocity<<std::endl;
-  std::cout<<"  dm_cutoff: "<<dm_cutoff<<std::endl;
-  std::cout<<"  level_energy: "<< me.level_energy()<<std::endl;
-  std::cout<<"  m_thresh: "<<m_thresh<<std::endl;
+  //std::cout<<"New test time!"<<std::endl;
+  //std::cout<<"  was passed some variables.."<<std::endl;
+  //std::cout<<"  dm_mass: "<<dm_mass<<std::endl;
+  //std::cout<<"  dm_velocity: "<<dm_velocity<<std::endl;
+  //std::cout<<"  dm_cutoff: "<<dm_cutoff<<std::endl;
+  //std::cout<<"  level_energy: "<< me.level_energy()<<std::endl;
+  //std::cout<<"  m_thresh: "<<m_thresh<<std::endl;
   double vx = 0.001;
   double pi = 3.14159265358979323846;
   //double mx = ma_;
@@ -1030,52 +1046,52 @@ double marley::NuclearReaction::dm_total_xs(double dm_mass, double dm_velocity, 
   double dsigmadCosBareUV = vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))*AmpUV;
 
 
-  std::cout<<"\n"<<std::endl;
-  std::cout<<std::setprecision(20)<<std::endl;
-  std::cout<<"mN: "<<mN<<std::endl;
-  std::cout<<"mNprime: "<<mNprime<<std::endl;
-  std::cout<<"ExLab: "<<ExLab<<std::endl;
-  std::cout<<"Ecm: "<<Ecm<<std::endl;
-  std::cout<<"Ex: "<<Ex<<std::endl;
-  std::cout<<"E2: "<<E2<<std::endl;
-  std::cout<<"E3: "<<E3<<std::endl;
-  std::cout<<"Ee_: "<<Ee_<<std::endl;
-  std::cout<<std::endl;
+  // std::cout<<"\n"<<std::endl;
+  // std::cout<<std::setprecision(20)<<std::endl;
+  // std::cout<<"mN: "<<mN<<std::endl;
+  // std::cout<<"mNprime: "<<mNprime<<std::endl;
+  // std::cout<<"ExLab: "<<ExLab<<std::endl;
+  // std::cout<<"Ecm: "<<Ecm<<std::endl;
+  // std::cout<<"Ex: "<<Ex<<std::endl;
+  // std::cout<<"E2: "<<E2<<std::endl;
+  // std::cout<<"E3: "<<E3<<std::endl;
+  // std::cout<<"Ee_: "<<Ee_<<std::endl;
+  // std::cout<<std::endl;
 
-  std::cout<<"kx: "<<kx<<std::endl;
-  std::cout<<"k2: "<<k2<<std::endl;
-  std::cout<<"k3: "<<k3<<std::endl;
-  std::cout<<"ke: "<<ke<<std::endl;
-  std::cout<<std::endl;
+  // std::cout<<"kx: "<<kx<<std::endl;
+  // std::cout<<"k2: "<<k2<<std::endl;
+  // std::cout<<"k3: "<<k3<<std::endl;
+  // std::cout<<"ke: "<<ke<<std::endl;
+  // std::cout<<std::endl;
 
-  std::cout<<"kekx: "<<kekx<<std::endl;
-  std::cout<<"p2p3: "<<p2p3<<std::endl;
-  std::cout<<"p2ke: "<<p2ke<<std::endl;
-  std::cout<<"p3kx: "<<p3kx<<std::endl;
-  std::cout<<"p3ke: "<<p3ke<<std::endl;
-  std::cout<<"p2kx: "<<p2kx<<std::endl;
-  std::cout<<std::endl;
+  // std::cout<<"kekx: "<<kekx<<std::endl;
+  // std::cout<<"p2p3: "<<p2p3<<std::endl;
+  // std::cout<<"p2ke: "<<p2ke<<std::endl;
+  // std::cout<<"p3kx: "<<p3kx<<std::endl;
+  // std::cout<<"p3ke: "<<p3ke<<std::endl;
+  // std::cout<<"p2kx: "<<p2kx<<std::endl;
+  // std::cout<<std::endl;
 
-  std::cout<<"gamma2CM: "<<gamma2CM<<std::endl;
-  std::cout<<"beta2CM: "<<beta2CM<<std::endl;
-  std::cout<<"E3lab: "<<E3lab<<std::endl; 
-  std::cout<<"Eelab: "<<Eelab<<std::endl; 
-  std::cout<<std::endl;
+  // std::cout<<"gamma2CM: "<<gamma2CM<<std::endl;
+  // std::cout<<"beta2CM: "<<beta2CM<<std::endl;
+  // std::cout<<"E3lab: "<<E3lab<<std::endl; 
+  // std::cout<<"Eelab: "<<Eelab<<std::endl; 
+  // std::cout<<std::endl;
 
-  std::cout<<"  AmpUV: "<<AmpUV<<std::endl;
-  std::cout<<"  dsigmadCosBareUV: "<<dsigmadCosBareUV<<" |"<<std::endl;
-  std::cout<<"    prefactor: "<< vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))<<std::endl;
-  //double dsigmadCosBareUV = vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))*AmpUV;
-  std::cout<<"  mN: "<<mN<<std::endl;
-  std::cout<<"  mb_: "<<mb_<<std::endl;
-  std::cout<<"  mNprime: "<<mNprime<<std::endl;
-  std::cout<<"  md - Zi_*me_;: "<<md-Zi_*me_<<std::endl;
-  std::cout<<"  md: "<<md<<std::endl;
-  std::cout<<"  md_gs_: "<<md_gs_<<std::endl;
-  std::cout<<"  energy_level: "<<me.level_energy()<<std::endl;
-  std::cout<<"  transition type: "<<me.type()<<std::endl;
-  std::cout<<std::endl;
-  std::cout<<"  going to return this: "<<4*marley_utils::pi*dsigmadCosBareUV<<" |"<<std::endl;
+  // std::cout<<"  AmpUV: "<<AmpUV<<std::endl;
+  // std::cout<<"  dsigmadCosBareUV: "<<dsigmadCosBareUV<<" |"<<std::endl;
+  // std::cout<<"    prefactor: "<< vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))<<std::endl;
+  // //double dsigmadCosBareUV = vx*(1./(LAMBDA*LAMBDA*LAMBDA*LAMBDA))*(1./(64.*pi*pi*Ecm*Ecm)*(ke/kx))*AmpUV;
+  // std::cout<<"  mN: "<<mN<<std::endl;
+  // std::cout<<"  mb_: "<<mb_<<std::endl;
+  // std::cout<<"  mNprime: "<<mNprime<<std::endl;
+  // std::cout<<"  md - Zi_*me_;: "<<md-Zi_*me_<<std::endl;
+  // std::cout<<"  md: "<<md<<std::endl;
+  // std::cout<<"  md_gs_: "<<md_gs_<<std::endl;
+  // std::cout<<"  energy_level: "<<me.level_energy()<<std::endl;
+  // std::cout<<"  transition type: "<<me.type()<<std::endl;
+  // std::cout<<std::endl;
+  //std::cout<<"  going to return this: "<<4*marley_utils::pi*dsigmadCosBareUV<<" |"<<std::endl;
 
 
 

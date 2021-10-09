@@ -37,11 +37,11 @@
 namespace {
   // Default settings for the projectile kinetic energy range and number of
   // steps for the total cross section dump
-  constexpr double DEFAULT_MASS_MIN = 0.1;
-  constexpr double DEFAULT_MASS_MAX = 50.;
-  constexpr double DEFAULT_LAMBDA_MIN = 10000000.;
+  constexpr double DEFAULT_MASS_MIN = 1.5;
+  constexpr double DEFAULT_MASS_MAX = 15.;
+  constexpr double DEFAULT_LAMBDA_MIN = 100000.;
   constexpr double DEFAULT_LAMBDA_MAX = 100000000.;
-  constexpr int DEFAULT_NUM_STEPS = 10;
+  constexpr int DEFAULT_NUM_STEPS = 1000;
 
   // Default projectile PDG code
   constexpr int DEFAULT_PDG = marley_utils::DM;
@@ -145,8 +145,19 @@ int main(int argc, char* argv[]) {
   double dm_mass = dm_mass_min;
   double UV_cutoff = UV_cutoff_min;
 
-  std::cout<<"Debugging the dumpdmxs function!"<<std::endl;
   std::cout<<"Masses will range from "<<dm_mass_min<<" to "<<dm_mass_max<<std::endl;
+
+  // adding some calculations for signal vs solar nu background
+  // all of this is being hard coded in for 1kT of 40Ar and not at all configurable yet
+  double background = 9430.; // count / kT-year
+  double exposure = 1000000.; // 1kT
+  double mi = 37214.65445386492; 
+  double num_atoms = (40.-19.)*exposure/(1.79 * std::pow(10.,-30.))/(mi);
+  double convertSigmaCMsquared = std::pow(1000. * 1.98 * std::pow(10.,-14.),2);
+  double sec_per_yr = 3.154 * std::pow(10.,7.);
+  double rho = 200.;
+
+
 
   // Ready for the dump now
   for ( int s = 0; s < num_steps; ++s ) {
@@ -159,18 +170,24 @@ int main(int argc, char* argv[]) {
       UV_cutoff +=delta_cutoff_step;
 
       // Compute the total cross section at this projectile
-      //double xsec = gen.total_xs( projectile_pdg, KE );
-      double dm_xsec = gen.total_xs();
+      double dm_xsec = gen.total_xs( 17, 1.0, dm_mass, UV_cutoff);
+      double signal_events = dm_xsec*sec_per_yr*convertSigmaCMsquared*(3*std::pow(10.,10.))*rho/dm_mass*num_atoms;
+
+      // Compute the confidence interval
+      double significance = signal_events / std::sqrt(background);
+      
 
 
       // Write the current kinetic energy and total cross section to the output
       // file
-      out_file << dm_mass << ' ' << UV_cutoff << ' '<< dm_xsec << '\n';
+      out_file << dm_mass << ' ' << UV_cutoff << ' ' << signal_events << ' ' << significance << '\n';
 
       // Also write these quantities to the Logger
       MARLEY_LOG_INFO() << "dm mass = " << dm_mass << ", UV cutoff = " << UV_cutoff << ", dm total xsec = "
-        << dm_xsec << '\n';
+        << dm_xsec;// << '\n';
+
     }
+    UV_cutoff = UV_cutoff_min;
 
   }
 

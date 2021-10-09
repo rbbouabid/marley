@@ -245,6 +245,7 @@ namespace marley {
       /// @param KEa The kinetic energy of the projectile (MeV)
       /// @return Abundance-weighted total cross section (MeV<sup> -2</sup> / atom)
       double total_xs(int pdg_a, double KEa) const;
+      double total_xs(int pdg_a, double KEa, double dm_mass, double UV_cutoff) const;
 
       /// @brief Creates an event object for a fixed projectile species,
       /// kinetic energy, and atomic target

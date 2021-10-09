@@ -58,6 +58,7 @@ namespace marley {
       /// @note Functions that override total_xs() should always return zero
       /// if pdg_a != pdg_a_.
       virtual double total_xs(int pdg_a, double KEa) const = 0;
+      virtual double total_xs(int pdg_a, double KEa, double dm_mass, double UV_cutoff) const = 0;
 
       /// @brief Differential cross section
       /// @f$d\sigma/d\cos\theta_{c}^{\mathrm{CM}}@f$

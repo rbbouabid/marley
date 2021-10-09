@@ -114,6 +114,10 @@ double marley::ElectronReaction::total_xs(int pdg_a, double KEa) const {
   return xs;
 }
 
+double marley::ElectronReaction::total_xs(int pdg_a, double KEa, double dm_mass, double UV_cutoff) const {
+	return 0;
+}
+
 double marley::ElectronReaction::diff_xs(int pdg_a, double KEa,
   double cos_theta_c_cm) const
 {
