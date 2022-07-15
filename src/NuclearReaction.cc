@@ -261,7 +261,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa,
   // object.
 
   // Complain if none of the levels we have data for are kinematically allowed
-  std::cout<<"Does it break here1?"<<std::endl;
+  //std::cout<<"Does it break here1?"<<std::endl;
   if ( level_weights.empty() ) {
     throw marley::Error("Could not create this event. The DecayScheme object"
       " associated with this reaction does not contain data for any"
@@ -466,7 +466,7 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
   // object.
 
   // Complain if none of the levels we have data for are kinematically allowed
-  std::cout<<"Does it break here2?"<<std::endl;
+  //std::cout<<"Does it break here2?"<<std::endl;
   if ( level_weights.empty() ) {
     throw marley::Error("Could not create this event. The DecayScheme object"
       " associated with this reaction does not contain data for any"
@@ -498,9 +498,9 @@ marley::Event marley::NuclearReaction::create_event(int pdg_a, double KEa, doubl
 
   // Get the energy of the selected level.
   double E_level = sampled_matrix_el.level_energy();
-  std::cout<<std::endl;
+  //std::cout<<std::endl;
   //std::cout<<"E_level: "<<E_level<<std::endl;
-  std::cout<<std::endl;
+  //std::cout<<std::endl;
 
   // Update the residue mass based on its excitation energy for the current
   // event

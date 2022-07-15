@@ -11,7 +11,7 @@
     atom_fractions: [ 1.0 ],
   },
 
-  // Simulate CC dm scattering on 40Ar 
+  // Simulate CC dm scattering on 40Ar
   reactions: [ "dmAr.react" ],
   log: [ { file: "stdout", level: "info" } ],
 
@@ -32,7 +32,7 @@
   executable_settings: {
 
     // The number of events to generate
-    events: 1,
+    events: 100000,
 
     // Event output configuration
      output: [ { file: "scripted/events_0_0.ascii", format: "ascii", mode: "overwrite" } ],

@@ -11,9 +11,10 @@
     atom_fractions: [ 1.0 ],
   },
 
-  // Simulate CC dm scattering on 40Ar 
+  // Simulate CC dm scattering on 40Ar
   reactions: [ "dm.react" ],
-  log: [ { file: "stdout", level: "info" } ],
+  //log: [ { file: "stdout", level: "info" } ],
+  log: [ { file: "stdout", level: "debug" } ],
 
   // Neutrino source specification
     source: {
@@ -32,10 +33,11 @@
   executable_settings: {
 
     // The number of events to generate
-    events: 1,
+    events: 100,
 
     // Event output configuration
-     output: [ { file: "scripted/events_0_0.ascii", format: "ascii", mode: "overwrite" } ],
+     //output: [ { file: "scripted/events_0_0.ascii", format: "ascii", mode: "overwrite" } ],
+     output: [ { file: "events.ascii", format: "ascii", mode: "overwrite" } ],
 
   },
 }

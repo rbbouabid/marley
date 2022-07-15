@@ -41,7 +41,7 @@ namespace {
   constexpr double DEFAULT_MASS_MAX = 15.;
   constexpr double DEFAULT_LAMBDA_MIN = 100000.;
   constexpr double DEFAULT_LAMBDA_MAX = 100000000.;
-  constexpr int DEFAULT_NUM_STEPS = 1000;
+  constexpr int DEFAULT_NUM_STEPS = 50;
 
   // Default projectile PDG code
   constexpr int DEFAULT_PDG = marley_utils::DM;
@@ -156,6 +156,7 @@ int main(int argc, char* argv[]) {
   double convertSigmaCMsquared = std::pow(1000. * 1.98 * std::pow(10.,-14.),2);
   double sec_per_yr = 3.154 * std::pow(10.,7.);
   double rho = 200.;
+  double pi = 3.1415926539;
 
 
 
@@ -175,16 +176,19 @@ int main(int argc, char* argv[]) {
 
       // Compute the confidence interval
       double significance = signal_events / std::sqrt(background);
+
+      // Compute the y axis
+      double y = convertSigmaCMsquared * std::pow(dm_mass,2.) / ( 4. * pi * std::pow(UV_cutoff,4.) );
       
 
 
       // Write the current kinetic energy and total cross section to the output
       // file
-      out_file << dm_mass << ' ' << UV_cutoff << ' ' << signal_events << ' ' << significance << '\n';
+      out_file << dm_mass << ' ' << UV_cutoff << ' ' << y << ' ' << signal_events << ' ' << significance << '\n';
 
       // Also write these quantities to the Logger
       MARLEY_LOG_INFO() << "dm mass = " << dm_mass << ", UV cutoff = " << UV_cutoff << ", dm total xsec = "
-        << dm_xsec;// << '\n';
+        << dm_xsec << ", Events = " << signal_events;// << '\n';
 
     }
     UV_cutoff = UV_cutoff_min;
